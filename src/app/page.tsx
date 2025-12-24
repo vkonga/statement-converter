@@ -1,42 +1,77 @@
 import { FileUploadForm } from '@/components/app/file-upload-form';
 import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
-import { CheckCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GaugeCircle, ShieldCheck, FileEdit } from 'lucide-react';
 
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
       <Header />
       <main className="flex-1">
-        <div className="container mx-auto grid grid-cols-1 items-center gap-12 px-4 py-16 lg:grid-cols-2 lg:py-24">
-          <div className="space-y-6">
-            <h1 className="text-4xl font-bold tracking-tighter text-foreground sm:text-5xl md:text-6xl">
-              Unlock Your Bank Statements
-            </h1>
-            <p className="max-w-[600px] text-lg text-muted-foreground md:text-xl">
-              Instantly convert your bank statement PDFs into analysis-ready
-              Excel files. Save time, reduce errors, and gain insights faster
-              than ever.
-            </p>
-            <ul className="space-y-3 text-muted-foreground">
-              <li className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-primary" />
-                <span>Fast, accurate data extraction.</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-primary" />
-                <span>Secure and private processing.</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-primary" />
-                <span>No more manual data entry.</span>
-              </li>
-            </ul>
+        <section className="w-full py-16 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6">
+            <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 xl:grid-cols-[1fr_550px]">
+              <div className="flex flex-col justify-center space-y-4">
+                <div className="space-y-2">
+                  <h1 className="text-4xl font-bold tracking-tighter text-foreground sm:text-5xl xl:text-6xl/none">
+                    Unlock Your Bank Statements
+                  </h1>
+                  <p className="max-w-[600px] text-lg text-muted-foreground md:text-xl">
+                    Instantly convert your bank statement PDFs into
+                    analysis-ready Excel files. Save time, reduce errors, and
+                    gain insights faster than ever.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-center">
+                <FileUploadForm />
+              </div>
+            </div>
           </div>
-          <div className="flex items-center justify-center">
-            <FileUploadForm />
+        </section>
+        <section className="w-full bg-background py-16 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6">
+            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:grid-cols-3">
+              <Card className="h-full">
+                <CardHeader>
+                  <GaugeCircle className="mb-4 h-10 w-10 text-primary" />
+                  <CardTitle>Fast, Accurate Extraction</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Our AI-powered engine pulls data from your PDFs with speed
+                    and precision, eliminating tedious manual work.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="h-full">
+                <CardHeader>
+                  <ShieldCheck className="mb-4 h-10 w-10 text-primary" />
+                  <CardTitle>Secure & Private</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Your data is processed securely. We respect your privacy
+                    and never store your financial information.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="h-full">
+                <CardHeader>
+                  <FileEdit className="mb-4 h-10 w-10 text-primary" />
+                  <CardTitle>No More Manual Entry</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Free yourself from the drudgery of data entry. Get
+                    perfectly formatted Excel files in seconds.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </div>
+        </section>
       </main>
       <Footer />
     </div>
