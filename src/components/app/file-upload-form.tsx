@@ -10,7 +10,13 @@ import {
   File as FileIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { cn, jsonToCsv, downloadFile } from '@/lib/utils';
 import { processPdf } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -170,17 +176,22 @@ export function FileUploadForm() {
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
           >
-            <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
-            <p className="mt-4 font-semibold">
-              Drag & drop your PDF here
-            </p>
-            <p className="text-sm text-muted-foreground">or click to browse</p>
+            <div className="flex flex-col items-center gap-2">
+              <UploadCloud className="h-12 w-12 text-muted-foreground" />
+              <p className="mt-4 font-semibold">
+                Drag & drop your PDF here
+              </p>
+              <p className="text-sm text-muted-foreground">
+                or click to select a file
+              </p>
+            </div>
+
             <input
               type="file"
               ref={fileInputRef}
               className="hidden"
               accept=".pdf"
-              onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
+              onChange={e => handleFileSelect(e.target.files?.[0] || null)}
             />
           </div>
         );
@@ -188,13 +199,14 @@ export function FileUploadForm() {
   };
 
   return (
-    <Card className="w-full max-w-lg shadow-xl">
-      <CardHeader>
-        <CardTitle className="text-center text-2xl">
-          Convert PDF to Excel
-        </CardTitle>
+    <Card className="w-full max-w-lg shadow-2xl bg-card">
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl">Get Started</CardTitle>
+        <CardDescription>
+          Upload your PDF to begin the conversion process.
+        </CardDescription>
       </CardHeader>
-      <CardContent className="min-h-[250px] flex items-center justify-center">
+      <CardContent className="min-h-[280px] flex items-center justify-center p-6">
         {renderContent()}
       </CardContent>
     </Card>
