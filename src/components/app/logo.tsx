@@ -5,46 +5,33 @@ export function Logo({ className }: { className?: string }) {
     <svg
       width="32"
       height="32"
-      viewBox="0 0 24 24"
+      viewBox="0 0 32 32"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={cn('text-primary', className)}
+      className={cn(className)}
     >
+      <rect width="32" height="32" rx="8" fill="hsl(var(--primary))" />
       <path
-        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"
-        stroke="currentColor"
+        d="M10 10H14.5C15.8807 10 17 11.1193 17 12.5V12.5C17 13.8807 15.8807 15 14.5 15H10V10Z"
+        stroke="hsl(var(--primary-foreground))"
         strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="hsl(var(--card))"
       />
       <path
-        d="M14 2v6h6"
-        stroke="currentColor"
+        d="M10 15L10 22"
+        stroke="hsl(var(--primary-foreground))"
         strokeWidth="2"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M16 13H8"
-        stroke="currentColor"
+        d="M22 22V15H17.5C16.1193 15 15 16.1193 15 17.5V17.5C15 18.8807 16.1193 20 17.5 20H22"
+        stroke="hsl(var(--primary-foreground))"
         strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M16 17H8"
-        stroke="currentColor"
+        d="M22 15L22 10"
+        stroke="hsl(var(--primary-foreground))"
         strokeWidth="2"
         strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M10 9H8"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   );
