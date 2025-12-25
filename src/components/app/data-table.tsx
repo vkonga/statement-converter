@@ -49,7 +49,7 @@ export function DataTable({
 
   const getConfidence = (header: string) => {
     const mapping = columnMappings[header];
-    if (mapping && mapping !== 'ignore') return "High Confidence";
+    if (mapping && mapping !== 'ignore' && mapping !== 'amount_credit_debit') return "High Confidence";
     return "Review";
   }
 

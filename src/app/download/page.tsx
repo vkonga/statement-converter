@@ -84,14 +84,14 @@ export default function DownloadPage() {
     let debits = 0;
 
     data.forEach(row => {
-      const amountStr = String(row.amount_credit_debit || '0').replace(/[^0-9.-]+/g,"");
-      const amount = parseFloat(amountStr);
-      if (!isNaN(amount)) {
-        if (amount > 0) {
-          credits += amount;
-        } else {
-          debits += Math.abs(amount);
-        }
+      const creditAmount = parseFloat(String(row.credit || '0'));
+      const debitAmount = parseFloat(String(row.debit || '0'));
+
+      if (!isNaN(creditAmount)) {
+        credits += creditAmount;
+      }
+      if (!isNaN(debitAmount)) {
+        debits += debitAmount;
       }
     });
 
@@ -136,6 +136,9 @@ export default function DownloadPage() {
   };
 
   const formatCurrency = (value: number) => {
+    if (typeof value !== 'number' || isNaN(value) || value === 0) {
+      return '';
+    }
     return value.toLocaleString('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -145,6 +148,16 @@ export default function DownloadPage() {
   if (!data) {
     return null; // or a loading spinner
   }
+
+  const tableHeaders = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    const headers = Object.keys(data[0]);
+    // Ensure credit and debit are last
+    const orderedHeaders = headers.filter(h => h !== 'credit' && h !== 'debit');
+    if (headers.includes('credit')) orderedHeaders.push('credit');
+    if (headers.includes('debit')) orderedHeaders.push('debit');
+    return orderedHeaders;
+  }, [data]);
 
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
@@ -253,7 +266,7 @@ export default function DownloadPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        {data.length > 0 && Object.keys(data[0]).map(header => (
+                        {tableHeaders.map(header => (
                             <TableHead key={header}>{header.replace(/_/g, ' ').toUpperCase()}</TableHead>
                         ))}
                       </TableRow>
@@ -261,9 +274,9 @@ export default function DownloadPage() {
                     <TableBody>
                       {data.map((row, index) => (
                         <TableRow key={index}>
-                          {Object.entries(row).map(([key, value], i) => (
-                             <TableCell key={i}>
-                               {key.includes('amount') ? formatCurrency(parseFloat(String(value))) : String(value)}
+                          {tableHeaders.map((header) => (
+                             <TableCell key={header}>
+                               {header === 'credit' || header === 'debit' ? formatCurrency(Number(row[header])) : String(row[header])}
                              </TableCell>
                           ))}
                         </TableRow>

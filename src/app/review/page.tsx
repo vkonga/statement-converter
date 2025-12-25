@@ -18,7 +18,9 @@ type TableData = RowData[];
 const MAPPING_OPTIONS = [
   { value: 'transaction_date', label: 'Transaction Date' },
   { value: 'description', label: 'Description' },
-  { value: 'amount_credit_debit', label: 'Amount (Credit/Debit)' },
+  { value: 'credit', label: 'Credit' },
+  { value: 'debit', label: 'Debit' },
+  { value: 'amount_credit_debit', label: 'Amount (will be split)' },
   { value: 'ignore', label: 'Ignore Column' },
 ];
 
@@ -63,6 +65,10 @@ export default function ReviewPage() {
               initialMappings[header] = 'transaction_date';
             } else if (headerLower.includes('desc') || headerLower.includes('details')) {
               initialMappings[header] = 'description';
+            } else if (headerLower.includes('credit') && !headerLower.includes('debit')) {
+                initialMappings[header] = 'credit';
+            } else if (headerLower.includes('debit') && !headerLower.includes('credit')) {
+                initialMappings[header] = 'debit';
             } else if (headerLower.includes('amount') || headerLower.includes('credit') || headerLower.includes('debit')) {
                 initialMappings[header] = 'amount_credit_debit';
             } else {
@@ -99,7 +105,21 @@ export default function ReviewPage() {
       for (const originalHeader in columnMappings) {
         const newHeader = columnMappings[originalHeader];
         if (newHeader !== 'ignore' && row[originalHeader] !== undefined) {
-          newRow[newHeader] = row[originalHeader];
+          if (newHeader === 'amount_credit_debit') {
+            const amountStr = String(row[originalHeader] || '0').replace(/[^0-9.-]+/g, "");
+            const amount = parseFloat(amountStr);
+            if (!isNaN(amount)) {
+              if (amount >= 0) {
+                newRow['credit'] = amount;
+                newRow['debit'] = 0;
+              } else {
+                newRow['credit'] = 0;
+                newRow['debit'] = Math.abs(amount);
+              }
+            }
+          } else {
+            newRow[newHeader] = row[originalHeader];
+          }
         }
       }
       return newRow;
