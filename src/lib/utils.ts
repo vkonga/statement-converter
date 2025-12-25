@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function jsonToCsv(jsonDataString: string): string {
+export function jsonToCsv(jsonDataString: string, totals?: { credits: number, debits: number }): string {
   try {
     const jsonData = JSON.parse(jsonDataString);
     let dataArray: any[] = [];
@@ -28,7 +28,15 @@ export function jsonToCsv(jsonDataString: string): string {
     if (dataArray.length === 0) return "";
   
     const headers = Object.keys(dataArray[0]);
-    const csvRows = [headers.join(',')];
+    const csvRows = [];
+
+    if (totals) {
+      csvRows.push(`"Total Credits",${totals.credits}`);
+      csvRows.push(`"Total Debits",${totals.debits}`);
+      csvRows.push(''); // Empty line
+    }
+
+    csvRows.push(headers.join(','));
   
     for (const row of dataArray) {
       const values = headers.map(header => {

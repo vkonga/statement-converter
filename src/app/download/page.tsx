@@ -29,17 +29,63 @@ import {
 import { cn, jsonToCsv, downloadFile } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import * as XLSX from 'xlsx';
 
 type RowData = { [key: string]: string | number };
 type TableData = RowData[];
 type FileFormat = 'xlsx' | 'csv';
 
-// Mock function for XLSX conversion, as it's more complex.
-const jsonToXlsx = (jsonDataString: string) => {
-  // In a real app, this would use a library like 'xlsx'
-  // For now, we'll just return the CSV data for demonstration.
-  console.warn('XLSX export is not fully implemented and uses CSV as a fallback.');
-  return jsonToCsv(jsonDataString);
+const jsonToXlsx = (data: TableData, totals: { credits: number, debits: number }, fileName: string) => {
+  if (typeof window === 'undefined') return;
+
+  // Create a new workbook
+  const wb = XLSX.utils.book_new();
+
+  // Create the worksheet
+  const ws_data = [
+    ["Total Credits", totals.credits],
+    ["Total Debits", totals.debits],
+    [], // Empty row for spacing
+    ...data.length > 0 ? [Object.keys(data[0])] : [], // Headers
+    ...data.map(row => Object.values(row))
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+  // Apply currency formatting
+  const currencyFormat = '$#,##0.00;[Red]-$#,##0.00';
+  ws['B1'].z = currencyFormat;
+  ws['B2'].z = currencyFormat;
+
+  if (data.length > 0) {
+    const headers = Object.keys(data[0]);
+    const creditIndex = headers.indexOf('credit');
+    const debitIndex = headers.indexOf('debit');
+    
+    for (let i = 0; i < data.length; i++) {
+      const rowNum = i + 5; // 4 rows of headers/spacing + 1 for 1-based index
+      if (creditIndex !== -1) {
+        const cellRef = XLSX.utils.encode_cell({c: creditIndex, r: rowNum -1});
+        if (ws[cellRef]) ws[cellRef].z = currencyFormat;
+      }
+      if (debitIndex !== -1) {
+        const cellRef = XLSX.utils.encode_cell({c: debitIndex, r: rowNum -1});
+        if (ws[cellRef]) ws[cellRef].z = currencyFormat;
+      }
+    }
+  }
+
+  // Auto-fit columns
+  const cols = Object.keys(data[0] || {}).map((_, i) => ({
+    wch: data.reduce((w, r) => Math.max(w, String(Object.values(r)[i] || '').length), 10)
+  }));
+  ws['!cols'] = cols;
+
+
+  // Add the worksheet to the workbook
+  XLSX.utils.book_append_sheet(wb, ws, "Transactions");
+
+  // Write the workbook and trigger download
+  XLSX.writeFile(wb, `${fileName}_converted.xlsx`);
 };
 
 export default function DownloadPage() {
@@ -86,13 +132,8 @@ export default function DownloadPage() {
     data.forEach(row => {
       const creditAmount = Number(row.credit) || 0;
       const debitAmount = Number(row.debit) || 0;
-
-      if (!isNaN(creditAmount)) {
-        credits += creditAmount;
-      }
-      if (!isNaN(debitAmount)) {
-        debits += debitAmount;
-      }
+      credits += creditAmount;
+      debits += debitAmount;
     });
 
     return {
@@ -112,45 +153,26 @@ export default function DownloadPage() {
     return orderedHeaders;
   }, [data]);
 
-  if (!data) {
-    return null; // or a loading spinner
-  }
-
   const handleDownload = () => {
     if (!data) return;
 
-    const dataString = JSON.stringify(data);
-    let fileContent: string | null = null;
-    let mimeType = '';
-    let finalFileName = `${fileName}_converted.${fileFormat}`;
-
-    if (fileFormat === 'csv') {
-      fileContent = jsonToCsv(dataString);
-      mimeType = 'text/csv;charset=utf-8;';
-    } else {
-      // We are mocking xlsx for now
-      fileContent = jsonToXlsx(dataString);
-      // Proper MIME type for XLSX
-      mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    }
-
-    if (fileContent) {
-      downloadFile(fileContent, finalFileName, mimeType);
-      toast({
+    if (fileFormat === 'xlsx') {
+      jsonToXlsx(data, { credits: totalCredits, debits: totalDebits }, fileName);
+       toast({
         title: 'Download Started',
-        description: `Your file ${finalFileName} is downloading.`,
+        description: `Your file ${fileName}_converted.xlsx is downloading.`,
       });
     } else {
-      toast({
-        title: 'Download Failed',
-        description: 'Could not generate the file for download.',
-        variant: 'destructive',
+      const csvString = jsonToCsv(JSON.stringify(data), { credits: totalCredits, debits: totalDebits });
+      downloadFile(csvString, `${fileName}_converted.csv`, 'text/csv;charset=utf-8;');
+       toast({
+        title: 'Download Started',
+        description: `Your file ${fileName}_converted.csv is downloading.`,
       });
     }
   };
 
   const formatCurrency = (value: number) => {
-     // Always show the formatted number, color/sign is handled by column context
     return value.toLocaleString('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -165,6 +187,10 @@ export default function DownloadPage() {
       style: 'currency',
       currency: 'USD',
     });
+  }
+  
+  if (!data) {
+    return null; // or a loading spinner
   }
   
   return (
