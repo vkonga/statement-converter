@@ -144,11 +144,7 @@ export default function DownloadPage() {
       currency: 'USD',
     });
   };
-
-  if (!data) {
-    return null; // or a loading spinner
-  }
-
+  
   const tableHeaders = useMemo(() => {
     if (!data || data.length === 0) return [];
     const headers = Object.keys(data[0]);
@@ -158,6 +154,10 @@ export default function DownloadPage() {
     if (headers.includes('debit')) orderedHeaders.push('debit');
     return orderedHeaders;
   }, [data]);
+
+  if (!data) {
+    return null; // or a loading spinner
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
