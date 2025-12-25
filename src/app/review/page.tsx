@@ -99,7 +99,7 @@ export default function ReviewPage() {
 
   const getMappedData = () => {
     if (!data) return [];
-
+  
     return data.map(row => {
       const newRow: { [key: string]: any } = {};
       for (const originalHeader in columnMappings) {
@@ -107,29 +107,43 @@ export default function ReviewPage() {
         if (newHeader !== 'ignore' && row[originalHeader] !== undefined) {
           if (newHeader === 'amount_credit_debit') {
             const valueStr = String(row[originalHeader] || '').trim();
+            // This regex is a bit more robust for various currency formats
             const amountStr = valueStr.replace(/[^0-9.-]+/g, "");
             const amount = parseFloat(amountStr);
-
+  
             if (!isNaN(amount)) {
-                if (valueStr.startsWith('-') || amount < 0) {
-                    newRow['credit'] = 0;
-                    newRow['debit'] = Math.abs(amount);
-                } else {
-                    newRow['credit'] = amount;
-                    newRow['debit'] = 0;
+              // Check if it's a debit (negative value)
+              if (valueStr.startsWith('-') || amount < 0) {
+                newRow['debit'] = Math.abs(amount);
+                if (!newRow['credit']) {
+                  newRow['credit'] = 0;
                 }
+              } else { // Otherwise it's a credit
+                newRow['credit'] = amount;
+                if (!newRow['debit']) {
+                  newRow['debit'] = 0;
+                }
+              }
             } else {
-                newRow['credit'] = 0;
-                newRow['debit'] = 0;
+              if (!newRow['credit']) newRow['credit'] = 0;
+              if (!newRow['debit']) newRow['debit'] = 0;
             }
           } else {
-            newRow[newHeader] = row[originalHeader];
+            // This handles cases where 'credit' or 'debit' are mapped directly
+            const value = row[originalHeader];
+            newRow[newHeader] = (typeof value === 'string' && (newHeader === 'credit' || newHeader === 'debit')) 
+                ? parseFloat(value.replace(/[^0-9.-]+/g, "")) || 0
+                : value;
           }
         }
       }
+      // Ensure credit/debit columns exist even if not in source
+      if (newRow['credit'] === undefined) newRow['credit'] = 0;
+      if (newRow['debit'] === undefined) newRow['debit'] = 0;
+  
       return newRow;
     });
-  }
+  };
 
   const handleConfirmAndConvert = () => {
     const mappedData = getMappedData();

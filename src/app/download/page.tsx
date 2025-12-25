@@ -76,6 +76,16 @@ export default function DownloadPage() {
        router.push('/');
     }
   }, [router, toast]);
+  
+  const tableHeaders = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    const headers = Object.keys(data[0]);
+    // Ensure credit and debit are last
+    const orderedHeaders = headers.filter(h => h !== 'credit' && h !== 'debit');
+    if (headers.includes('credit')) orderedHeaders.push('credit');
+    if (headers.includes('debit')) orderedHeaders.push('debit');
+    return orderedHeaders;
+  }, [data]);
 
   const { totalCredits, totalDebits, transactionCount } = useMemo(() => {
     if (!data) return { totalCredits: 0, totalDebits: 0, transactionCount: 0 };
@@ -101,6 +111,10 @@ export default function DownloadPage() {
       transactionCount: data.length,
     };
   }, [data]);
+
+  if (!data) {
+    return null; // or a loading spinner
+  }
 
   const handleDownload = () => {
     if (!data) return;
@@ -136,29 +150,17 @@ export default function DownloadPage() {
   };
 
   const formatCurrency = (value: number) => {
+    // We don't show 0.00 for the opposite column
     if (typeof value !== 'number' || isNaN(value) || value === 0) {
       return '';
     }
+    // Only return the formatted number, color/sign is handled by column
     return value.toLocaleString('en-US', {
       style: 'currency',
       currency: 'USD',
     });
   };
   
-  const tableHeaders = useMemo(() => {
-    if (!data || data.length === 0) return [];
-    const headers = Object.keys(data[0]);
-    // Ensure credit and debit are last
-    const orderedHeaders = headers.filter(h => h !== 'credit' && h !== 'debit');
-    if (headers.includes('credit')) orderedHeaders.push('credit');
-    if (headers.includes('debit')) orderedHeaders.push('debit');
-    return orderedHeaders;
-  }, [data]);
-
-  if (!data) {
-    return null; // or a loading spinner
-  }
-
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
       <Header />
@@ -267,7 +269,7 @@ export default function DownloadPage() {
                     <TableHeader>
                       <TableRow>
                         {tableHeaders.map(header => (
-                            <TableHead key={header}>{header.replace(/_/g, ' ').toUpperCase()}</TableHead>
+                            <TableHead key={header} className={cn((header === 'credit' || header === 'debit') && 'text-right')}>{header.replace(/_/g, ' ').toUpperCase()}</TableHead>
                         ))}
                       </TableRow>
                     </TableHeader>
@@ -275,8 +277,12 @@ export default function DownloadPage() {
                       {data.map((row, index) => (
                         <TableRow key={index}>
                           {tableHeaders.map((header) => (
-                             <TableCell key={header}>
-                               {header === 'credit' || header === 'debit' ? formatCurrency(Number(row[header])) : String(row[header])}
+                             <TableCell key={header} className={cn((header === 'credit' || header === 'debit') && 'text-right font-mono')}>
+                               {header === 'credit' || header === 'debit' ? 
+                                 <span className={cn(header === 'credit' ? 'text-green-600' : 'text-red-600')}>
+                                    {formatCurrency(Number(row[header]))}
+                                 </span>
+                                 : String(row[header])}
                              </TableCell>
                           ))}
                         </TableRow>
