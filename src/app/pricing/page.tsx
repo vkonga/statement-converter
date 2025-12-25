@@ -10,8 +10,9 @@ import {
 } from '@/components/ui/card';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
-import { Check } from 'lucide-react';
+import { Check, Star } from 'lucide-react';
 import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
 
 export default function PricingPage() {
   return (
@@ -34,7 +35,7 @@ export default function PricingPage() {
           </div>
         </section>
         <section className="w-full pb-12 md:pb-24 lg:pb-32">
-          <div className="container grid items-start justify-center gap-8 px-4 md:px-6 lg:grid-cols-2 lg:gap-12">
+          <div className="container grid items-start justify-center gap-8 px-4 md:px-6 lg:grid-cols-3 lg:gap-12">
             <Card className="h-full shadow-lg">
               <CardHeader className="pb-4">
                 <CardTitle className="text-3xl">Free</CardTitle>
@@ -52,7 +53,10 @@ export default function PricingPage() {
                 </Button>
               </CardFooter>
             </Card>
-            <Card className="h-full shadow-lg border-2 border-primary">
+            <Card className="h-full shadow-lg border-2 border-primary relative">
+              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  Most Popular
+              </Badge>
               <CardHeader className="pb-4">
                 <CardTitle className="text-3xl">Pro</CardTitle>
                 <CardDescription>
@@ -66,6 +70,23 @@ export default function PricingPage() {
               <CardFooter>
                 <Button className="w-full" asChild>
                   <Link href="/signup">Upgrade Now</Link>
+                </Button>
+              </CardFooter>
+            </Card>
+            <Card className="h-full shadow-lg">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-3xl">Pro Max</CardTitle>
+                <CardDescription>
+                  For power users and businesses.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-4xl font-bold">$30/mo</div>
+                <p className="text-muted-foreground">Up to 1000 pages/month</p>
+              </CardContent>
+              <CardFooter>
+                <Button variant="secondary" className="w-full" asChild>
+                  <Link href="/signup">Go Pro Max</Link>
                 </Button>
               </CardFooter>
             </Card>
