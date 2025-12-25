@@ -45,6 +45,10 @@
         "signUpType": {
           "type": "string",
           "description": "The signup method ('email' or 'google')."
+        },
+        "authProvider": {
+            "type": "string",
+            "description": "The authentication provider ('password' or 'google.com')."
         }
       },
       "required": [
@@ -54,7 +58,8 @@
         "lastName",
         "signUpDate",
         "isVerified",
-        "signUpType"
+        "signUpType",
+        "authProvider"
       ]
     },
     "Statement": {

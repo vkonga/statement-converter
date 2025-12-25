@@ -14,25 +14,32 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/app/logo';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
   GoogleAuthProvider,
   signInWithPopup,
+  updateProfile,
+  getAdditionalUserInfo,
 } from 'firebase/auth';
 import { Chrome } from 'lucide-react';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function SignupPage() {
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isVerificationSent, setIsVerificationSent] = useState(false);
 
   useEffect(() => {
@@ -47,6 +54,11 @@ export default function SignupPage() {
       setError('Passwords do not match.');
       return;
     }
+    if (!firstName || !lastName) {
+      setError('Please enter your first and last name.');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -55,7 +67,28 @@ export default function SignupPage() {
         email,
         password
       );
-      await sendEmailVerification(userCredential.user);
+      const user = userCredential.user;
+
+      // Update Firebase Auth profile
+      await updateProfile(user, { displayName: `${firstName} ${lastName}` });
+
+      // Create user document in Firestore
+      const userRef = doc(firestore, 'users', user.uid);
+      await setDoc(userRef, {
+        id: user.uid,
+        email: user.email,
+        firstName: firstName,
+        lastName: lastName,
+        signUpDate: serverTimestamp(),
+        lastLogin: serverTimestamp(),
+        isVerified: false,
+        signUpType: 'email',
+        authProvider: 'password',
+      });
+
+      // Send verification email
+      await sendEmailVerification(user);
+
       setIsVerificationSent(true);
     } catch (err: any) {
       const errorCode = err.code;
@@ -73,15 +106,38 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true);
+    setIsGoogleLoading(true);
     setError(null);
+    const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, new GoogleAuthProvider());
-      // Let the useEffect handle the redirect
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      const additionalInfo = getAdditionalUserInfo(result);
+
+      // If it's a new user, create a document in Firestore
+      if (additionalInfo?.isNewUser) {
+        const userRef = doc(firestore, 'users', user.uid);
+        const nameParts = user.displayName?.split(' ') || [''];
+        const firstName = nameParts[0];
+        const lastName = nameParts.slice(1).join(' ');
+
+        await setDoc(userRef, {
+          id: user.uid,
+          email: user.email,
+          firstName: firstName,
+          lastName: lastName,
+          signUpDate: serverTimestamp(),
+          lastLogin: serverTimestamp(),
+          isVerified: true, // Google users are considered verified
+          signUpType: 'google',
+          authProvider: 'google.com',
+        });
+      }
     } catch (err: any) {
-      setError('Failed to sign in with Google. Please try again.');
+      console.error(err);
+      setError('Failed to sign up with Google. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsGoogleLoading(false);
     }
   };
 
@@ -141,6 +197,30 @@ export default function SignupPage() {
         <CardContent>
           <form onSubmit={handleSignup}>
             <div className="grid gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="first-name">First Name</Label>
+                  <Input
+                    id="first-name"
+                    placeholder="Max"
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    disabled={isLoading || isGoogleLoading}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="last-name">Last Name</Label>
+                  <Input
+                    id="last-name"
+                    placeholder="Robinson"
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    disabled={isLoading || isGoogleLoading}
+                  />
+                </div>
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -150,7 +230,7 @@ export default function SignupPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isLoading || isGoogleLoading}
                 />
               </div>
               <div className="grid gap-2">
@@ -161,7 +241,7 @@ export default function SignupPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isLoading || isGoogleLoading}
                 />
               </div>
               <div className="grid gap-2">
@@ -172,7 +252,7 @@ export default function SignupPage() {
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isLoading || isGoogleLoading}
                 />
               </div>
               {error && (
@@ -180,7 +260,11 @@ export default function SignupPage() {
                   {error}
                 </p>
               )}
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading || isGoogleLoading}
+              >
                 {isLoading ? 'Creating Account...' : 'Create Account'}
               </Button>
               <Button
@@ -188,10 +272,10 @@ export default function SignupPage() {
                 type="button"
                 className="w-full"
                 onClick={handleGoogleSignIn}
-                disabled={isLoading}
+                disabled={isLoading || isGoogleLoading}
               >
                 <Chrome className="mr-2 h-4 w-4" />
-                Sign up with Google
+                {isGoogleLoading ? 'Signing up...' : 'Sign up with Google'}
               </Button>
             </div>
           </form>

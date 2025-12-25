@@ -14,19 +14,22 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/app/logo';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore } from '@/firebase';
 import {
   GoogleAuthProvider,
   sendEmailVerification,
   signInWithEmailAndPassword,
   signInWithPopup,
+  getAdditionalUserInfo,
 } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Chrome } from 'lucide-react';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
 
@@ -34,6 +37,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
 
   useEffect(() => {
@@ -57,7 +61,8 @@ export default function LoginPage() {
       } else if (errorCode === 'auth/wrong-password') {
         friendlyMessage = 'Incorrect password. Please try again.';
       } else if (errorCode === 'auth/invalid-credential') {
-        friendlyMessage = 'Invalid credentials. Please check your email and password.';
+        friendlyMessage =
+          'Invalid credentials. Please check your email and password.';
       }
       setError(friendlyMessage);
       setIsLoading(false);
@@ -65,14 +70,40 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true);
+    setIsGoogleLoading(true);
     setError(null);
+    const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, new GoogleAuthProvider());
-      // Let the useEffect handle the redirect
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      const additionalInfo = getAdditionalUserInfo(result);
+
+      if (additionalInfo?.isNewUser) {
+        const userRef = doc(firestore, 'users', user.uid);
+        const nameParts = user.displayName?.split(' ') || [''];
+        const firstName = nameParts[0];
+        const lastName = nameParts.slice(1).join(' ');
+
+        await setDoc(userRef, {
+          id: user.uid,
+          email: user.email,
+          firstName: firstName,
+          lastName: lastName,
+          signUpDate: serverTimestamp(),
+          lastLogin: serverTimestamp(),
+          isVerified: true, // Google users are considered verified
+          signUpType: 'google',
+          authProvider: 'google.com',
+        });
+      } else {
+        const userRef = doc(firestore, 'users', user.uid);
+        await setDoc(userRef, { lastLogin: serverTimestamp() }, { merge: true });
+      }
     } catch (err: any) {
+      console.error(err);
       setError('Failed to sign in with Google. Please try again.');
-      setIsLoading(false);
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -174,7 +205,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isLoading || isGoogleLoading}
                 />
               </div>
               <div className="grid gap-2">
@@ -193,7 +224,7 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isLoading || isGoogleLoading}
                 />
               </div>
               {error && (
@@ -201,7 +232,11 @@ export default function LoginPage() {
                   {error}
                 </p>
               )}
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading || isGoogleLoading}
+              >
                 {isLoading ? 'Logging in...' : 'Login with Email'}
               </Button>
               <Button
@@ -209,10 +244,10 @@ export default function LoginPage() {
                 type="button"
                 className="w-full"
                 onClick={handleGoogleSignIn}
-                disabled={isLoading}
+                disabled={isLoading || isGoogleLoading}
               >
                 <Chrome className="mr-2 h-4 w-4" />
-                Sign in with Google
+                {isGoogleLoading ? 'Signing in...' : 'Sign in with Google'}
               </Button>
             </div>
           </form>
