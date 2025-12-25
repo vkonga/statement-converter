@@ -37,51 +37,46 @@ type FileFormat = 'xlsx' | 'csv';
 const jsonToXlsx = (data: TableData, totals: { credits: number, debits: number }, currency: string, fileName: string) => {
   if (typeof window === 'undefined') return;
 
-  // Create a new workbook
   const wb = XLSX.utils.book_new();
 
-  const currencyFormat = `${currency}#,##0.00;[Red]-${currency}#,##0.00`;
+  const creditFormat = `${currency}#,##0.00`;
+  const debitFormat = `${currency}#,##0.00;[Red]-${currency}#,##0.00`;
 
-  // Create the worksheet
   const ws_data = [
     ["Total Credits", totals.credits],
     ["Total Debits", totals.debits],
-    [], // Empty row for spacing
-    ...data.length > 0 ? [Object.keys(data[0])] : [], // Headers
+    [], 
+    ...data.length > 0 ? [Object.keys(data[0])] : [],
     ...data.map(row => Object.values(row))
   ];
   const ws = XLSX.utils.aoa_to_sheet(ws_data);
 
-  // Apply currency formatting to totals
   const totalCreditsCell = XLSX.utils.encode_cell({c: 1, r: 0});
-  if (ws[totalCreditsCell]) ws[totalCreditsCell].z = currencyFormat;
+  if (ws[totalCreditsCell]) ws[totalCreditsCell].z = creditFormat;
   
   const totalDebitsCell = XLSX.utils.encode_cell({c: 1, r: 1});
-  if (ws[totalDebitsCell]) ws[totalDebitsCell].z = currencyFormat;
+  if (ws[totalDebitsCell]) ws[totalDebitsCell].z = debitFormat;
 
   if (data.length > 0) {
     const headers = Object.keys(data[0]);
     const creditIndex = headers.indexOf('credit');
     const debitIndex = headers.indexOf('debit');
     
-    // Apply currency formatting to transaction columns
     for (let i = 0; i < data.length; i++) {
-      const rowNum = i + 4; // 3 rows of headers/spacing + 1 for 1-based index
+      const rowNum = i + 4; 
       if (creditIndex !== -1) {
         const cellRef = XLSX.utils.encode_cell({c: creditIndex, r: rowNum});
-        if (ws[cellRef]) ws[cellRef].z = currencyFormat;
+        if (ws[cellRef]) ws[cellRef].z = creditFormat;
       }
       if (debitIndex !== -1) {
         const cellRef = XLSX.utils.encode_cell({c: debitIndex, r: rowNum});
         if (ws[cellRef]) {
-            // For debits, we can use a format that shows them in red
-            ws[cellRef].z = `${currency}#,##0.00;[Red]${currency}#,##0.00`;
+            ws[cellRef].z = debitFormat;
         }
       }
     }
   }
 
-  // Auto-fit columns
   if (data.length > 0) {
     const cols = Object.keys(data[0]).map((key, i) => {
         let maxLength = key.length;
@@ -96,11 +91,7 @@ const jsonToXlsx = (data: TableData, totals: { credits: number, debits: number }
     ws['!cols'] = cols;
   }
 
-
-  // Add the worksheet to the workbook
   XLSX.utils.book_append_sheet(wb, ws, "Transactions");
-
-  // Write the workbook and trigger download
   XLSX.writeFile(wb, `${fileName}_converted.xlsx`);
 };
 
@@ -140,7 +131,6 @@ export default function DownloadPage() {
         router.push('/');
       }
     } else {
-       // Make sure we have data, otherwise redirect
        router.push('/');
     }
   }, [router, toast]);
@@ -168,12 +158,15 @@ export default function DownloadPage() {
   const tableHeaders = useMemo(() => {
     if (!data || data.length === 0) return [];
     const headers = Object.keys(data[0]);
-    // Ensure credit and debit are last
     const orderedHeaders = headers.filter(h => h !== 'credit' && h !== 'debit');
     if (headers.includes('credit')) orderedHeaders.push('credit');
     if (headers.includes('debit')) orderedHeaders.push('debit');
     return orderedHeaders;
   }, [data]);
+
+  if (!data) {
+    return null; 
+  }
 
   const handleDownload = () => {
     if (!data) return;
@@ -195,6 +188,12 @@ export default function DownloadPage() {
   };
 
   const formatCurrency = (value: number) => {
+    if (value === 0) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency,
+      }).format(0);
+    }
     return value.toLocaleString('en-US', {
       style: 'currency',
       currency: currency,
@@ -209,10 +208,6 @@ export default function DownloadPage() {
       style: 'currency',
       currency: currency,
     });
-  }
-  
-  if (!data) {
-    return null; // or a loading spinner
   }
   
   return (
@@ -230,7 +225,6 @@ export default function DownloadPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column */}
             <div className="lg:col-span-1">
               <Card className="p-6">
                 <div className="flex items-start gap-4 mb-6">
@@ -281,7 +275,6 @@ export default function DownloadPage() {
               </Card>
             </div>
 
-            {/* Right Column */}
             <div className="lg:col-span-2">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                 <Card>
