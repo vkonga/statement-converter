@@ -51,10 +51,10 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
 
   const formatCurrency = (value: string | number | undefined) => {
     if (value === undefined || value === null) return '';
-    const numberValue = typeof value === 'string' ? parseFloat(value) : value;
+    const numberValue = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]+/g, '')) : value;
     if (isNaN(numberValue)) return value.toString();
 
-    const isNegative = numberValue < 0 || value.toString().startsWith('-');
+    const isNegative = numberValue < 0 || value.toString().trim().startsWith('-');
 
     return (
       <span className={cn(isNegative ? 'text-destructive' : 'text-green-600')}>
@@ -93,29 +93,42 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
 
     return initialData.map((row) => {
       const newRow: Record<string, string> = {};
+      let debitValue: string | null = null;
+      let creditValue: string | null = null;
+      
+      const amountColumn = Object.keys(columnMappings).find(
+        (header) => columnMappings[header] === 'amount_credit_debit'
+      );
+
+      if (amountColumn && row[amountColumn] !== undefined) {
+        const value = row[amountColumn];
+        const amount = parseFloat(value.replace(/[^0-9.-]+/g, ''));
+        if (!isNaN(amount)) {
+            if (value.toString().trim().startsWith('-') || amount < 0) {
+                debitValue = Math.abs(amount).toString();
+                creditValue = "0";
+            } else {
+                creditValue = amount.toString();
+                debitValue = "0";
+            }
+        }
+      }
+
       for (const [originalHeader, value] of Object.entries(row)) {
         const mapping = columnMappings[originalHeader];
-        if (mapping !== '') {
-          if (mapping === 'amount_credit_debit') {
-            const amount = parseFloat(
-              value.replace(/[^0-9.-]+/g, '')
-            );
-            if (!isNaN(amount)) {
-                if (value.toString().startsWith('-')) {
-                    newRow['debit'] = Math.abs(amount).toString();
-                    newRow['credit'] = "0";
-                } else {
-                    newRow['credit'] = amount.toString();
-                    newRow['debit'] = "0";
-                }
-            }
-          } else {
-            newRow[mapping] = value;
+        if (mapping && mapping !== '') {
+          if (mapping !== 'amount_credit_debit') {
+             newRow[mapping] = value;
           }
         } else {
+          // Keep unmapped columns
           newRow[originalHeader] = value;
         }
       }
+
+      if (creditValue !== null) newRow['credit'] = creditValue;
+      if (debitValue !== null) newRow['debit'] = debitValue;
+
       return newRow;
     });
   };
@@ -209,8 +222,7 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
       </div>
 
       <div className="rounded-lg border">
-        <ScrollArea className="w-full" style={{ height: 'calc(100vh - 300px)' }}>
-          <Table className="min-w-full">
+          <Table>
             <TableHeader className="sticky top-0 bg-muted/80 backdrop-blur-sm z-10">
               <TableRow>
                 {headers.map((header, index) => (
@@ -229,6 +241,9 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
                           <SelectValue placeholder="Select mapping..." />
                         </SelectTrigger>
                         <SelectContent>
+                           <SelectItem value="">
+                            Don't map
+                          </SelectItem>
                           {Object.entries(MAPPING_OPTIONS).map(
                             ([key, option]) => (
                               <SelectItem key={key} value={key}>
@@ -261,7 +276,6 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
               ))}
             </TableBody>
           </Table>
-        </ScrollArea>
       </div>
 
       <div className="flex justify-end">

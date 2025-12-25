@@ -48,7 +48,7 @@ const prompt = ai.definePrompt({
 
 You will receive a bank statement PDF in data URI format. Your task is to perform the following actions:
 1. Identify the main transaction table in the PDF.
-2. Extract all the transaction data from this table. Each row should be represented as an array of key-value pairs, where the key is the column header and the value is the cell content.
+2. Extract all the transaction data from this table. Each row should be represented as an array of key-value pairs, where the key is the column header and the value is the cell content. Make sure to extract ALL rows.
 3. Determine the currency used in the statement (e.g., USD, EUR, GBP, CAD) and return its three-letter code.
 
 Return a JSON object containing the array of transactions and the currency code.
