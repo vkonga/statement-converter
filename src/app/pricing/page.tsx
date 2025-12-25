@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { PayPalButton } from '@/components/app/paypal-button';
 
 export default function PricingPage() {
   const [isYearly, setIsYearly] = useState(false);
@@ -107,7 +108,7 @@ export default function PricingPage() {
             {plans.map((plan) => (
               <Card
                 key={plan.name}
-                className={`h-full shadow-lg ${
+                className={`flex flex-col h-full shadow-lg ${
                   plan.popular ? 'border-2 border-primary' : ''
                 } relative`}
               >
@@ -120,7 +121,7 @@ export default function PricingPage() {
                   <CardTitle className="text-3xl">{plan.name}</CardTitle>
                   <CardDescription>{plan.description}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 flex-1">
                   <div className="text-4xl font-bold">
                     {typeof plan.price === 'object' ? (
                       isYearly ? (
@@ -131,9 +132,9 @@ export default function PricingPage() {
                     ) : (
                       plan.price
                     )}
-                    {typeof plan.price === 'object' && <span className="text-xl font-normal text-muted-foreground">/mo</span>}
+                    {typeof plan.price === 'object' && plan.price.monthly > 0 && <span className="text-xl font-normal text-muted-foreground">/mo</span>}
                   </div>
-                   {typeof plan.price === 'object' && isYearly && (
+                   {typeof plan.price === 'object' && isYearly && plan.price.yearly > 0 && (
                     <p className="text-sm text-muted-foreground -mt-2">
                       Billed as ${plan.price.yearly * 12} per year
                     </p>
@@ -141,13 +142,21 @@ export default function PricingPage() {
                   <p className="text-muted-foreground">{plan.pages}</p>
                 </CardContent>
                 <CardFooter>
-                  <Button
-                    variant={plan.buttonVariant as any}
-                    className="w-full"
-                    asChild
-                  >
-                    <Link href={plan.href}>{plan.buttonText}</Link>
-                  </Button>
+                  {plan.href && typeof plan.price === 'object' && plan.price.monthly > 0 ? (
+                     <PayPalButton 
+                        planName={plan.name} 
+                        amount={isYearly ? plan.price.yearly.toString() : plan.price.monthly.toString()} 
+                        billingCycle={isYearly ? 'yearly' : 'monthly'}
+                      />
+                  ) : plan.href ? (
+                    <Button
+                      variant={plan.buttonVariant as any}
+                      className="w-full"
+                      asChild
+                    >
+                      <Link href={plan.href}>{plan.buttonText}</Link>
+                    </Button>
+                  ) : null }
                 </CardFooter>
               </Card>
             ))}
