@@ -77,16 +77,6 @@ export default function DownloadPage() {
     }
   }, [router, toast]);
   
-  const tableHeaders = useMemo(() => {
-    if (!data || data.length === 0) return [];
-    const headers = Object.keys(data[0]);
-    // Ensure credit and debit are last
-    const orderedHeaders = headers.filter(h => h !== 'credit' && h !== 'debit');
-    if (headers.includes('credit')) orderedHeaders.push('credit');
-    if (headers.includes('debit')) orderedHeaders.push('debit');
-    return orderedHeaders;
-  }, [data]);
-
   const { totalCredits, totalDebits, transactionCount } = useMemo(() => {
     if (!data) return { totalCredits: 0, totalDebits: 0, transactionCount: 0 };
     
@@ -94,8 +84,9 @@ export default function DownloadPage() {
     let debits = 0;
 
     data.forEach(row => {
-      const creditAmount = parseFloat(String(row.credit || '0'));
-      const debitAmount = parseFloat(String(row.debit || '0'));
+      // Ensure we're parsing numbers correctly, even if they are strings.
+      const creditAmount = parseFloat(String(row.credit || '0').replace(/[^0-9.-]+/g, ""));
+      const debitAmount = parseFloat(String(row.debit || '0').replace(/[^0-9.-]+/g, ""));
 
       if (!isNaN(creditAmount)) {
         credits += creditAmount;
@@ -110,6 +101,16 @@ export default function DownloadPage() {
       totalDebits: debits,
       transactionCount: data.length,
     };
+  }, [data]);
+
+  const tableHeaders = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    const headers = Object.keys(data[0]);
+    // Ensure credit and debit are last
+    const orderedHeaders = headers.filter(h => h !== 'credit' && h !== 'debit');
+    if (headers.includes('credit')) orderedHeaders.push('credit');
+    if (headers.includes('debit')) orderedHeaders.push('debit');
+    return orderedHeaders;
   }, [data]);
 
   if (!data) {
@@ -150,16 +151,25 @@ export default function DownloadPage() {
   };
 
   const formatCurrency = (value: number) => {
-    // We don't show 0.00 for the opposite column
-    if (typeof value !== 'number' || isNaN(value) || value === 0) {
+    if (typeof value !== 'number' || isNaN(value)) {
       return '';
     }
-    // Only return the formatted number, color/sign is handled by column
+     // Always show the formatted number, color/sign is handled by column context
     return value.toLocaleString('en-US', {
       style: 'currency',
       currency: 'USD',
     });
   };
+
+  const formatCellCurrency = (value: number) => {
+    if (typeof value !== 'number' || isNaN(value) || value === 0) {
+      return '';
+    }
+    return value.toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    });
+  }
   
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
@@ -280,7 +290,7 @@ export default function DownloadPage() {
                              <TableCell key={header} className={cn((header === 'credit' || header === 'debit') && 'text-right font-mono')}>
                                {header === 'credit' || header === 'debit' ? 
                                  <span className={cn(header === 'credit' ? 'text-green-600' : 'text-red-600')}>
-                                    {formatCurrency(Number(row[header]))}
+                                    {formatCellCurrency(Number(row[header]))}
                                  </span>
                                  : String(row[header])}
                              </TableCell>
@@ -310,3 +320,5 @@ export default function DownloadPage() {
     </div>
   );
 }
+
+    
