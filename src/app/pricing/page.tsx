@@ -13,22 +13,6 @@ import { Footer } from '@/components/layout/footer';
 import { Check } from 'lucide-react';
 import Link from 'next/link';
 
-const features = {
-  free: [
-    '5 free conversions (lifetime)',
-    'Single page PDF conversion',
-    'Excel and CSV export',
-    'Email support',
-  ],
-  pro: [
-    'Up to 400 pages/month',
-    'Multi-page PDF conversion',
-    'Excel and CSV export',
-    'Priority email support',
-    'Access to new features',
-  ],
-};
-
 export default function PricingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -60,14 +44,7 @@ export default function PricingPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-4xl font-bold">$0/mo</div>
-                <ul className="grid gap-2 text-muted-foreground">
-                  {features.free.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2">
-                      <Check className="h-5 w-5 text-green-500" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+                <p className="text-muted-foreground">Up to 5 pages in life time</p>
               </CardContent>
               <CardFooter>
                 <Button variant="outline" className="w-full" asChild>
