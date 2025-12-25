@@ -1,31 +1,32 @@
 'use client';
 
 import { useState, useRef, type DragEvent } from 'react';
-import {
-  UploadCloud,
-  Trash2,
-  File as FileIcon,
-} from 'lucide-react';
+import { UploadCloud, Trash2, File as FileIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { processPdf } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@/firebase';
+import { PDFDocument } from 'pdf-lib';
+import { AuthDialog } from '@/components/app/auth-dialog';
 
 type Status = 'idle' | 'uploading' | 'processing' | 'success' | 'error';
 
 export function FileUploadArea() {
   const router = useRouter();
+  const { user } = useUser();
   const [status, setStatus] = useState<Status>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleFileSelect = (selectedFile: File | null) => {
+  const handleFileSelect = async (selectedFile: File | null) => {
     if (!selectedFile) return;
 
     if (selectedFile.type !== 'application/pdf') {
@@ -36,7 +37,7 @@ export function FileUploadArea() {
       });
       return;
     }
-    
+
     // Max 25MB
     if (selectedFile.size > 25 * 1024 * 1024) {
       toast({
@@ -47,6 +48,32 @@ export function FileUploadArea() {
       return;
     }
 
+    // Check page count for unauthenticated users
+    if (!user) {
+      try {
+        const fileBuffer = await selectedFile.arrayBuffer();
+        const pdfDoc = await PDFDocument.load(fileBuffer, {
+            // Skips parsing objects that are not required for getting the page count
+            updateMetadata: false 
+        });
+        const pageCount = pdfDoc.getPageCount();
+
+        if (pageCount > 1) {
+          setShowAuthDialog(true);
+          return;
+        }
+      } catch (error) {
+        console.error('Failed to read PDF for page count:', error);
+        toast({
+          title: 'Could Not Read PDF',
+          description:
+            'There was an error reading the PDF file. Please try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     setFile(selectedFile);
     setStatus('uploading');
     setErrorMessage(null);
@@ -54,8 +81,8 @@ export function FileUploadArea() {
 
     const reader = new FileReader();
     reader.readAsDataURL(selectedFile);
-    
-    reader.onprogress = (event) => {
+
+    reader.onprogress = event => {
       if (event.lengthComputable) {
         const percentage = Math.round((event.loaded * 100) / event.total);
         setProgress(percentage);
@@ -70,14 +97,14 @@ export function FileUploadArea() {
       if (result.success) {
         setStatus('success');
         toast({
-            title: "Extraction Complete",
-            description: "We've successfully extracted the data from your statement."
+          title: 'Extraction Complete',
+          description:
+            "We've successfully extracted the data from your statement.",
         });
 
         // Store result in session storage and navigate
         sessionStorage.setItem('statementData', JSON.stringify(result.data));
         router.push('/review');
-
       } else {
         setErrorMessage(result.error);
         setStatus('error');
@@ -125,44 +152,47 @@ export function FileUploadArea() {
   };
 
   const renderFileUpload = () => (
-    <div
-      className={cn(
-        'border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors duration-200',
-        isDragging
-          ? 'border-primary bg-primary/10'
-          : 'border-border hover:border-primary/50'
-      )}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-      onClick={() => fileInputRef.current?.click()}
-    >
-      <div className="flex flex-col items-center gap-4">
-        <div className="rounded-full bg-primary/10 p-4 border-8 border-primary/5">
-          <UploadCloud className="h-10 w-10 text-primary" />
+    <>
+      <AuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
+      <div
+        className={cn(
+          'border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors duration-200',
+          isDragging
+            ? 'border-primary bg-primary/10'
+            : 'border-border hover:border-primary/50'
+        )}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <div className="flex flex-col items-center gap-4">
+          <div className="rounded-full bg-primary/10 p-4 border-8 border-primary/5">
+            <UploadCloud className="h-10 w-10 text-primary" />
+          </div>
+          <div className="space-y-1">
+            <p className="mt-4 font-semibold text-lg">
+              Drop your bank statement here
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Supports PDF (Max 25MB)
+            </p>
+          </div>
+          <Button variant="default" size="lg" className="mt-2">
+            Browse Files
+          </Button>
         </div>
-        <div className='space-y-1'>
-          <p className="mt-4 font-semibold text-lg">
-            Drop your bank statement here
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Supports PDF (Max 25MB)
-          </p>
-        </div>
-        <Button variant="default" size="lg" className='mt-2'>
-          Browse Files
-        </Button>
-      </div>
 
-      <input
-        type="file"
-        ref={fileInputRef}
-        className="hidden"
-        accept=".pdf"
-        onChange={e => handleFileSelect(e.target.files?.[0] || null)}
-      />
-    </div>
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          accept=".pdf"
+          onChange={e => handleFileSelect(e.target.files?.[0] || null)}
+        />
+      </div>
+    </>
   );
 
   const renderFileStatus = () => {
@@ -172,37 +202,50 @@ export function FileUploadArea() {
     let statusColor = 'text-green-500';
 
     if (status === 'uploading') {
-        statusText = `Uploading... ${progress}%`;
-        statusColor = 'text-blue-500';
+      statusText = `Uploading... ${progress}%`;
+      statusColor = 'text-blue-500';
     } else if (status === 'processing') {
-        statusText = 'Processing...';
-        statusColor = 'text-yellow-500';
+      statusText = 'Processing...';
+      statusColor = 'text-yellow-500';
     } else if (status === 'success') {
-        statusText = 'Success';
-        statusColor = 'text-green-500';
+      statusText = 'Success';
+      statusColor = 'text-green-500';
     } else if (status === 'error') {
-        statusText = 'Error';
-        statusColor = 'text-red-500';
+      statusText = 'Error';
+      statusColor = 'text-red-500';
     }
 
     return (
       <div className="w-full space-y-4">
         <div className="bg-muted/50 rounded-lg p-4 flex items-center gap-4">
-            <FileIcon className="h-8 w-8 text-primary"/>
-            <div className="flex-1">
-                <p className="font-medium text-sm truncate">{file.name}</p>
-                <div className="flex items-center gap-2">
-                    <p className="text-xs text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
-                    <p className={cn("text-xs font-semibold", statusColor)}>{statusText}</p>
-                </div>
-                {status === 'uploading' && <Progress value={progress} className="h-1 mt-1" />}
-                {status === 'processing' && <Progress value={100} className="h-1 mt-1 animate-pulse" />}
+          <FileIcon className="h-8 w-8 text-primary" />
+          <div className="flex-1">
+            <p className="font-medium text-sm truncate">{file.name}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-muted-foreground">
+                {(file.size / (1024 * 1024)).toFixed(2)} MB
+              </p>
+              <p className={cn('text-xs font-semibold', statusColor)}>
+                {statusText}
+              </p>
             </div>
-            {status !== 'processing' && status !== 'uploading' && (
-              <Button variant="ghost" size="icon" onClick={handleReset} className="text-muted-foreground hover:text-destructive">
-                  <Trash2 className="h-5 w-5"/>
-              </Button>
+            {status === 'uploading' && (
+              <Progress value={progress} className="h-1 mt-1" />
             )}
+            {status === 'processing' && (
+              <Progress value={100} className="h-1 mt-1 animate-pulse" />
+            )}
+          </div>
+          {status !== 'processing' && status !== 'uploading' && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleReset}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-5 w-5" />
+            </Button>
+          )}
         </div>
         {status === 'error' && (
           <div className="text-destructive text-sm mt-2 p-2 bg-destructive/10 rounded-md text-center">
@@ -210,8 +253,8 @@ export function FileUploadArea() {
           </div>
         )}
       </div>
-    )
-  }
+    );
+  };
 
   return (
     <div className="w-full">
