@@ -44,20 +44,22 @@ const prompt = ai.definePrompt({
   name: 'extractDataFromStatementPrompt',
   input: {schema: ExtractDataFromStatementInputSchema},
   output: {schema: ExtractDataFromStatementOutputSchema},
-  prompt: `You are an expert data extraction specialist.
+  prompt: `You are an expert data extraction specialist. Your task is to process a bank statement PDF and extract all transaction data from it.
 
-You will receive a bank statement PDF in data URI format. Your task is to perform the following actions:
-1. Identify the main transaction table in the PDF.
-2. Extract all the transaction data from this table. Each row should be represented as an array of key-value pairs, where the key is the column header and the value is the cell content. Make sure to extract ALL rows.
-3. Determine the currency used in the statement (e.g., USD, EUR, GBP, CAD) and return its three-letter code.
+You will receive a bank statement PDF in data URI format. You must perform the following actions:
 
-Return a JSON object containing the array of transactions and the currency code.
+1.  **Process All Pages**: Go through every single page of the document to find all transactions. Do not stop after the first page.
+2.  **Identify the Main Transaction Table**: Locate the primary table containing the list of transactions.
+3.  **Extract EVERY Transaction**: Extract every single row from the transaction table(s) across all pages. Each row must be represented as an array of key-value pairs, where the key is the column header and the value is the cell's content. Do not summarize, shorten, or omit any rows.
+4.  **Determine the Currency**: Identify the currency used in the statement (e.g., USD, EUR, GBP) and return its three-letter code.
+
+Return a JSON object containing the complete array of all extracted transactions and the currency code.
 
 Here is the bank statement PDF:
 
 {{media url=pdfDataUri}}
 
-Ensure your output is a valid JSON object matching the required schema.`,
+Ensure your output is a valid JSON object matching the required schema and contains every transaction from the document.`,
 });
 
 const extractDataFromStatementFlow = ai.defineFlow(
