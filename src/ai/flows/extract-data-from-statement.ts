@@ -20,10 +20,16 @@ const ExtractDataFromStatementInputSchema = z.object({
 });
 export type ExtractDataFromStatementInput = z.infer<typeof ExtractDataFromStatementInputSchema>;
 
-const TransactionSchema = z.record(z.string());
+// Defines a single row as an array of key-value pairs.
+// This is more robust for the model than a generic object.
+const TransactionSchema = z.array(z.object({
+    key: z.string().describe("The column header for this cell."),
+    value: z.string().describe("The text content of this cell.")
+}));
+
 
 const ExtractDataFromStatementOutputSchema = z.object({
-  transactions: z.array(TransactionSchema).describe('An array of transaction objects found in the statement.'),
+  transactions: z.array(TransactionSchema).describe('An array of transaction objects found in the statement. Each transaction is a list of key-value pairs representing a row.'),
   currency: z.string().describe('The currency code (e.g., USD, EUR) found in the statement.'),
 });
 export type ExtractDataFromStatementOutput = z.infer<typeof ExtractDataFromStatementOutputSchema>;
@@ -42,7 +48,7 @@ const prompt = ai.definePrompt({
 
 You will receive a bank statement PDF in data URI format. Your task is to perform the following actions:
 1. Identify the main transaction table in the PDF.
-2. Extract all the transaction data from this table into an array of JSON objects, where each object represents a transaction (a row). The keys of the objects should be the column names/headers.
+2. Extract all the transaction data from this table. Each row should be represented as an array of key-value pairs, where the key is the column header and the value is the cell content.
 3. Determine the currency used in the statement (e.g., USD, EUR, GBP, CAD) and return its three-letter code.
 
 Return a JSON object containing the array of transactions and the currency code.
