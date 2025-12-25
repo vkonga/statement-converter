@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { cn, jsonToCsv, downloadFile } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type RowData = { [key: string]: string | number };
 type TableData = RowData[];
@@ -246,28 +247,30 @@ export default function DownloadPage() {
               <div className="bg-background rounded-lg border shadow-sm">
                 <div className="flex items-center justify-between p-4 border-b">
                   <h3 className="font-semibold">DATA PREVIEW</h3>
-                  <Badge variant="outline">First 5 rows</Badge>
+                  <Badge variant="outline">All {transactionCount} rows</Badge>
                 </div>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {Object.keys(data[0]).map(header => (
-                          <TableHead key={header}>{header.replace(/_/g, ' ').toUpperCase()}</TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.slice(0, 5).map((row, index) => (
-                      <TableRow key={index}>
-                        {Object.entries(row).map(([key, value], i) => (
-                           <TableCell key={i}>
-                             {key.includes('amount') ? formatCurrency(parseFloat(String(value))) : String(value)}
-                           </TableCell>
+                <ScrollArea className="h-96">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {data.length > 0 && Object.keys(data[0]).map(header => (
+                            <TableHead key={header}>{header.replace(/_/g, ' ').toUpperCase()}</TableHead>
                         ))}
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {data.map((row, index) => (
+                        <TableRow key={index}>
+                          {Object.entries(row).map(([key, value], i) => (
+                             <TableCell key={i}>
+                               {key.includes('amount') ? formatCurrency(parseFloat(String(value))) : String(value)}
+                             </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
               </div>
               
               <Card className="mt-8 bg-primary/5 border-dashed border-primary/20">
