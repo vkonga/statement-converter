@@ -5,7 +5,7 @@ import { extractDataFromStatement } from '@/ai/flows/extract-data-from-statement
 export async function processPdf(
   pdfDataUri: string
 ): Promise<
-  | { success: true; data: string; currency: string }
+  | { success: true; data: string[] }
   | { success: false; error: string }
 > {
   if (!pdfDataUri || !pdfDataUri.startsWith('data:application/pdf;base64,')) {
@@ -14,13 +14,13 @@ export async function processPdf(
 
   try {
     const result = await extractDataFromStatement({ pdfDataUri });
-    if (result.extractedData) {
-      return { success: true, data: result.extractedData, currency: result.currency || 'USD' };
+    if (result.columnNames) {
+      return { success: true, data: result.columnNames };
     } else {
       return {
         success: false,
         error:
-          'Failed to extract data. The AI model did not return any data.',
+          'Failed to extract column names. The AI model did not return any data.',
       };
     }
   } catch (e) {

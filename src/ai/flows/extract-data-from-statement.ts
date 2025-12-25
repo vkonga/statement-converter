@@ -1,9 +1,9 @@
 'use server';
 
 /**
- * @fileOverview Extracts tabular data and currency from a bank statement PDF using AI.
+ * @fileOverview Extracts column names from a bank statement PDF using AI.
  *
- * - extractDataFromStatement - A function that handles the data extraction process.
+ * - extractDataFromStatement - A function that handles the column name extraction process.
  * - ExtractDataFromStatementInput - The input type for the extractDataFromStatement function.
  * - ExtractDataFromStatementOutput - The return type for the extractDataFromStatement function.
  */
@@ -21,10 +21,7 @@ const ExtractDataFromStatementInputSchema = z.object({
 export type ExtractDataFromStatementInput = z.infer<typeof ExtractDataFromStatementInputSchema>;
 
 const ExtractDataFromStatementOutputSchema = z.object({
-  extractedData: z
-    .string()
-    .describe('The extracted tabular data from the bank statement in a JSON format.'),
-  currency: z.string().describe("The currency (e.g., USD, EUR, $, £) found in the bank statement."),
+  columnNames: z.array(z.string()).describe('An array of column names found in the statement.'),
 });
 export type ExtractDataFromStatementOutput = z.infer<typeof ExtractDataFromStatementOutputSchema>;
 
@@ -40,14 +37,15 @@ const prompt = ai.definePrompt({
   output: {schema: ExtractDataFromStatementOutputSchema},
   prompt: `You are an expert data extraction specialist.
 
-You will receive a bank statement PDF in data URI format. Your task is to extract all tabular data from the PDF and return it in JSON format.
-You must also identify the currency used in the statement (e.g., USD, EUR, $, £) and return it.
+You will receive a bank statement PDF in data URI format. Your task is to extract only the column names/headers from the main transaction table in the PDF.
+
+Return only an array of strings containing the column names.
 
 Here is the bank statement PDF:
 
 {{media url=pdfDataUri}}
 
-Ensure that the extracted data is accurate and well-structured.`,
+Ensure that you only extract the column headers.`,
 });
 
 const extractDataFromStatementFlow = ai.defineFlow(

@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { useRouter } from 'next/navigation';
 
-type Status = 'idle' | 'uploading' | 'processing' | 'error';
+type Status = 'idle' | 'uploading' | 'processing' | 'success' | 'error';
 
 export function FileUploadArea() {
   const router = useRouter();
@@ -22,6 +22,7 @@ export function FileUploadArea() {
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
+  const [columnNames, setColumnNames] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -51,6 +52,7 @@ export function FileUploadArea() {
     setStatus('uploading');
     setErrorMessage(null);
     setProgress(0);
+    setColumnNames([]);
 
     const reader = new FileReader();
     reader.readAsDataURL(selectedFile);
@@ -68,11 +70,12 @@ export function FileUploadArea() {
       const result = await processPdf(base64Pdf);
 
       if (result.success) {
-        // Store data and navigate to review page
-        sessionStorage.setItem('extractedData', result.data);
-        sessionStorage.setItem('fileName', selectedFile.name);
-        sessionStorage.setItem('currency', result.currency);
-        router.push('/review');
+        setStatus('success');
+        setColumnNames(result.data);
+        toast({
+            title: "Extraction Complete",
+            description: "Column names have been extracted successfully."
+        })
       } else {
         setErrorMessage(result.error);
         setStatus('error');
@@ -114,6 +117,7 @@ export function FileUploadArea() {
     setErrorMessage(null);
     setFile(null);
     setProgress(0);
+    setColumnNames([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -172,13 +176,16 @@ export function FileUploadArea() {
     } else if (status === 'processing') {
         statusText = 'Processing...';
         statusColor = 'text-yellow-500';
+    } else if (status === 'success') {
+        statusText = 'Success';
+        statusColor = 'text-green-500';
     } else if (status === 'error') {
         statusText = 'Error';
         statusColor = 'text-red-500';
     }
 
     return (
-      <div className="w-full">
+      <div className="w-full space-y-4">
         <div className="bg-muted/50 rounded-lg p-4 flex items-center gap-4">
             <FileIcon className="h-8 w-8 text-primary"/>
             <div className="flex-1">
@@ -199,6 +206,16 @@ export function FileUploadArea() {
         {status === 'error' && (
           <div className="text-destructive text-sm mt-2 p-2 bg-destructive/10 rounded-md text-center">
             {errorMessage}
+          </div>
+        )}
+        {status === 'success' && columnNames.length > 0 && (
+          <div className="bg-background border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Extracted Column Names:</h3>
+            <ul className="list-disc list-inside bg-muted/50 p-3 rounded-md">
+                {columnNames.map((name, index) => (
+                    <li key={index} className="text-sm">{name}</li>
+                ))}
+            </ul>
           </div>
         )}
       </div>
