@@ -40,15 +40,22 @@ const jsonToXlsx = (data: TableData, totals: { credits: number, debits: number }
   const wb = XLSX.utils.book_new();
 
   const creditFormat = `${currency}#,##0.00`;
-  const debitFormat = `${currency}#,##0.00;[Red]-${currency}#,##0.00`;
+  const debitFormat = `${currency}#,##0.00`;
 
-  const ws_data = [
+  const ws_data: (string | number)[][] = [
     ["Total Credits", totals.credits],
     ["Total Debits", totals.debits],
     [], 
-    ...data.length > 0 ? [Object.keys(data[0])] : [],
-    ...data.map(row => Object.values(row))
   ];
+
+  if (data.length > 0) {
+    const headers = Object.keys(data[0]);
+    ws_data.push(headers);
+    data.forEach(row => {
+      ws_data.push(headers.map(header => row[header]));
+    });
+  }
+
   const ws = XLSX.utils.aoa_to_sheet(ws_data);
 
   const totalCreditsCell = XLSX.utils.encode_cell({c: 1, r: 0});
@@ -63,14 +70,16 @@ const jsonToXlsx = (data: TableData, totals: { credits: number, debits: number }
     const debitIndex = headers.indexOf('debit');
     
     for (let i = 0; i < data.length; i++) {
-      const rowNum = i + 4; 
+      const rowNum = i + 4; // Start row for data is 4 (0-indexed)
       if (creditIndex !== -1) {
         const cellRef = XLSX.utils.encode_cell({c: creditIndex, r: rowNum});
-        if (ws[cellRef]) ws[cellRef].z = creditFormat;
+        if (ws[cellRef] && typeof ws[cellRef].v === 'number') {
+           ws[cellRef].z = creditFormat;
+        }
       }
       if (debitIndex !== -1) {
         const cellRef = XLSX.utils.encode_cell({c: debitIndex, r: rowNum});
-        if (ws[cellRef]) {
+        if (ws[cellRef] && typeof ws[cellRef].v === 'number') {
             ws[cellRef].z = debitFormat;
         }
       }
