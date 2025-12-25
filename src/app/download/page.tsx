@@ -16,13 +16,15 @@ import { Footer } from '@/components/layout/footer';
 import { CheckCircle, FileDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProcessedStatementData } from '@/app/actions';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore, useStorage } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function DownloadPage() {
   const router = useRouter();
   const { user } = useUser();
   const firestore = useFirestore();
+  const storage = useStorage();
   const [finalData, setFinalData] = useState<ProcessedStatementData | null>(
     null
   );
@@ -46,7 +48,7 @@ export default function DownloadPage() {
     }
   }, [router]);
 
-  const saveToHistory = async () => {
+  const saveToHistory = async (downloadUrl: string) => {
     if (!user || !firestore || !finalData || hasSavedToHistory.current) return;
 
     try {
@@ -54,9 +56,7 @@ export default function DownloadPage() {
       await addDoc(statementsCol, {
         fileName: finalData.fileName,
         uploadDate: serverTimestamp(),
-        // In a real app, you would upload the file to Cloud Storage and save the URL here.
-        // For now, we'll leave it blank.
-        excelLocation: '',
+        excelLocation: downloadUrl,
       });
       hasSavedToHistory.current = true; // Mark as saved
     } catch (error) {
@@ -65,40 +65,19 @@ export default function DownloadPage() {
     }
   }
 
-  const jsonToXlsx = (data: Record<string, string>[], fileName: string, currency: string) => {
-    if (!data || data.length === 0) {
-      console.error('No data to export.');
-      return;
-    }
-
+  const jsonToXlsxBlob = (data: Record<string, string>[]) => {
     const ws = XLSX.utils.json_to_sheet(data);
-
-    // Auto-size columns
-    const columnWidths = Object.keys(data[0] || {}).map(key => ({
-      wch: Math.max(
-        key.length,
-        ...data.map(row => (row[key] ? row[key].toString().length : 0))
-      ),
-    }));
-    ws['!cols'] = columnWidths;
-
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
-    XLSX.writeFile(wb, `${fileName}.xlsx`);
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    return new Blob([wbout], { type: 'application/octet-stream' });
   };
-
-  const jsonToCsv = (data: Record<string, any>[], fileName: string) => {
-    if (!data || data.length === 0) {
-      console.error('No data to export.');
-      return;
-    }
-    const ws = XLSX.utils.json_to_sheet(data);
-    const csv = XLSX.utils.sheet_to_csv(ws);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+  
+  const triggerLocalDownload = (blob: Blob, fileName: string) => {
     const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `${fileName}.csv`);
+    link.setAttribute('download', `${fileName}.xlsx`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -106,16 +85,46 @@ export default function DownloadPage() {
   };
 
 
-  const handleDownload = (format: 'xlsx' | 'csv') => {
+  const handleDownload = async (format: 'xlsx' | 'csv') => {
     if (!finalData) return;
-    
-    saveToHistory();
 
-    const fileName = `bank_statement_${new Date().toISOString().split('T')[0]}`;
+    const baseFileName = `bank_statement_${new Date().toISOString().split('T')[0]}`;
+    
     if (format === 'xlsx') {
-      jsonToXlsx(finalData.transactions, fileName, finalData.currency);
-    } else {
-      jsonToCsv(finalData.transactions, fileName);
+        const xlsxBlob = jsonToXlsxBlob(finalData.transactions);
+        
+        // Trigger local download immediately for the user
+        triggerLocalDownload(xlsxBlob, baseFileName);
+
+        // Upload to Firebase Storage and save to history if user is logged in
+        if (user && storage && !hasSavedToHistory.current) {
+            const storageRef = ref(storage, `users/${user.uid}/statements/${baseFileName}_${Date.now()}.xlsx`);
+            try {
+                const snapshot = await uploadBytes(storageRef, xlsxBlob);
+                const downloadURL = await getDownloadURL(snapshot.ref);
+                await saveToHistory(downloadURL);
+            } catch (error) {
+                console.error("Failed to upload to Firebase Storage:", error);
+            }
+        }
+
+    } else { // CSV
+        const ws = XLSX.utils.json_to_sheet(finalData.transactions);
+        const csv = XLSX.utils.sheet_to_csv(ws);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${baseFileName}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Note: CSV uploads are not currently saved to history.
+        if (user && !hasSavedToHistory.current) {
+          await saveToHistory(''); // Save record even without upload URL for CSV
+        }
     }
   };
 

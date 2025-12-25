@@ -64,8 +64,6 @@ export default function HistoryPage() {
 
   const handleDownload = (excelUrl: string | undefined) => {
     if (excelUrl) {
-      // In a real app, you might need to handle storage security rules
-      // For now, we assume it's a publicly accessible URL
       window.open(excelUrl, '_blank');
     }
   };
