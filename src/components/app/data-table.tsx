@@ -29,7 +29,11 @@ type DataTableProps = {
   onConfirm: (mappedData: Record<string, string>[]) => void;
 };
 
-export function DataTable({ initialData, currency, onConfirm }: DataTableProps) {
+export function DataTable({
+  initialData,
+  currency,
+  onConfirm,
+}: DataTableProps) {
   const { toast } = useToast();
   const headers = useMemo(() => {
     return initialData.length > 0 ? Object.keys(initialData[0]) : [];
@@ -40,17 +44,16 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
   >(() => {
     const initialMappings: Record<string, keyof MappingOptions | 'unmapped'> =
       {};
-    headers.forEach((header) => {
+    headers.forEach(header => {
       initialMappings[header] = 'unmapped';
     });
     return initialMappings;
   });
 
-  const previewData = useMemo(() => initialData.slice(0, 5), [initialData]);
-
   const formatCurrency = (value: string | number | undefined) => {
     if (value === undefined || value === null) return '';
-    const numberValue = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]+/g, '')) : value;
+    const numberValue =
+      typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]+/g, '')) : value;
     if (isNaN(numberValue)) return value.toString();
 
     const isNegative = numberValue < 0 || value.toString().trim().startsWith('-');
@@ -76,7 +79,7 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
       'description',
     ];
     const missingMappings = requiredMappings.filter(
-      (m) => !mappedEntries.some(([, v]) => v === m)
+      m => !mappedEntries.some(([, v]) => v === m)
     );
 
     if (missingMappings.length > 0) {
@@ -90,26 +93,26 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
       return null;
     }
 
-    return initialData.map((row) => {
+    return initialData.map(row => {
       const newRow: Record<string, string> = {};
       let debitValue: string | null = null;
       let creditValue: string | null = null;
-      
+
       const amountColumn = Object.keys(columnMappings).find(
-        (header) => columnMappings[header] === 'amount_credit_debit'
+        header => columnMappings[header] === 'amount_credit_debit'
       );
 
       if (amountColumn && row[amountColumn] !== undefined) {
         const value = row[amountColumn];
         const amount = parseFloat(value.replace(/[^0-9.-]+/g, ''));
         if (!isNaN(amount)) {
-            if (value.toString().trim().startsWith('-') || amount < 0) {
-                debitValue = Math.abs(amount).toString();
-                creditValue = "0";
-            } else {
-                creditValue = amount.toString();
-                debitValue = "0";
-            }
+          if (value.toString().trim().startsWith('-') || amount < 0) {
+            debitValue = Math.abs(amount).toString();
+            creditValue = '0';
+          } else {
+            creditValue = amount.toString();
+            debitValue = '0';
+          }
         }
       }
 
@@ -117,7 +120,7 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
         const mapping = columnMappings[originalHeader];
         if (mapping && mapping !== 'unmapped') {
           if (mapping !== 'amount_credit_debit') {
-             newRow[mapping] = value;
+            newRow[mapping] = value;
           }
         } else {
           // Keep unmapped columns
@@ -143,7 +146,7 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
     header: string,
     value: keyof MappingOptions | 'unmapped'
   ) => {
-    setColumnMappings((prev) => {
+    setColumnMappings(prev => {
       // Un-assign from other columns if this mapping is already used
       const newMappings = { ...prev };
       if (value !== 'unmapped') {
@@ -162,16 +165,16 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
     const newMappings: Record<string, keyof MappingOptions | 'unmapped'> = {};
     const usedMappings = new Set<keyof MappingOptions>();
 
-    headers.forEach((header) => {
+    headers.forEach(header => {
       const headerLower = header.toLowerCase().replace(/[^a-z0-9]/g, '');
       let bestMatch: keyof MappingOptions | 'unmapped' = 'unmapped';
 
       for (const [key, option] of Object.entries(MAPPING_OPTIONS)) {
         if (usedMappings.has(key as keyof MappingOptions)) continue;
-        const keywords = option.keywords.map((k) =>
+        const keywords = option.keywords.map(k =>
           k.toLowerCase().replace(/[^a-z0-9]/g, '')
         );
-        if (keywords.some((kw) => headerLower.includes(kw))) {
+        if (keywords.some(kw => headerLower.includes(kw))) {
           bestMatch = key as keyof MappingOptions;
           break;
         }
@@ -190,37 +193,37 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
   };
 
   const clearAllMappings = () => {
-    setColumnMappings((prev) => {
+    setColumnMappings(prev => {
       const newMappings = { ...prev };
       for (const key in newMappings) {
         newMappings[key] = 'unmapped';
       }
       return newMappings;
     });
-     toast({
+    toast({
       title: 'Mappings Cleared',
       description: 'All column mappings have been reset.',
     });
   };
 
-
   return (
     <div className="w-full space-y-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <h2 className="text-2xl font-bold">Review and Map Data</h2>
-        <div className='flex items-center gap-2'>
-            <Button variant="outline" size="sm" onClick={clearAllMappings}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Clear All
-            </Button>
-            <Button variant="outline" size="sm" onClick={autoMapColumns}>
-                <Wand2 className="mr-2 h-4 w-4" />
-                Auto-map Columns
-            </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={clearAllMappings}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Clear All
+          </Button>
+          <Button variant="outline" size="sm" onClick={autoMapColumns}>
+            <Wand2 className="mr-2 h-4 w-4" />
+            Auto-map Columns
+          </Button>
         </div>
       </div>
 
       <div className="rounded-lg border">
+        <div className="relative w-full overflow-auto">
           <Table>
             <TableHeader className="sticky top-0 bg-muted/80 backdrop-blur-sm z-10">
               <TableRow>
@@ -232,17 +235,15 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
                       </span>
                       <Select
                         value={columnMappings[header]}
-                        onValueChange={(value: keyof MappingOptions | 'unmapped') =>
-                          handleMappingChange(header, value)
-                        }
+                        onValueChange={(
+                          value: keyof MappingOptions | 'unmapped'
+                        ) => handleMappingChange(header, value)}
                       >
                         <SelectTrigger className="w-[200px] h-9">
                           <SelectValue placeholder="Select mapping..." />
                         </SelectTrigger>
                         <SelectContent>
-                           <SelectItem value="unmapped">
-                            Don't map
-                          </SelectItem>
+                          <SelectItem value="unmapped">Don't map</SelectItem>
                           {Object.entries(MAPPING_OPTIONS).map(
                             ([key, option]) => (
                               <SelectItem key={key} value={key}>
@@ -252,14 +253,20 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
                           )}
                         </SelectContent>
                       </Select>
-                      {MAPPING_OPTIONS[columnMappings[header] as keyof MappingOptions]?.required && <Badge variant="outline" className='w-fit'>Required</Badge>}
+                      {MAPPING_OPTIONS[
+                        columnMappings[header] as keyof MappingOptions
+                      ]?.required && (
+                        <Badge variant="outline" className="w-fit">
+                          Required
+                        </Badge>
+                      )}
                     </div>
                   </TableHead>
                 ))}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {previewData.map((row, rowIndex) => (
+              {initialData.map((row, rowIndex) => (
                 <TableRow key={rowIndex}>
                   {headers.map((header, cellIndex) => (
                     <TableCell
@@ -275,6 +282,7 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
               ))}
             </TableBody>
           </Table>
+        </div>
       </div>
 
       <div className="flex justify-end">
