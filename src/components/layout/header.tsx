@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Logo } from '@/components/app/logo';
@@ -40,6 +41,12 @@ export function Header() {
           </h1>
         </Link>
         <nav className="hidden items-center gap-4 md:flex">
+          <Link
+            href="/pricing"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Pricing
+          </Link>
           {user && (
             <>
               <Link
