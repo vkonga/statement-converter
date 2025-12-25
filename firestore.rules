@@ -1,0 +1,134 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model. All user-generated
+ * data, including profiles and statements, is stored in a private data tree accessible only
+ * to the authenticated user who created it. This ensures strong data isolation and privacy.
+ *
+ * Data Structure: The data is organized hierarchically under a top-level `users` collection.
+ * Each user's data is contained within a document named after their UID (`/users/{userId}`),
+ * and their associated data, like statements, is stored in subcollections
+ * (`/users/{userId}/statements/{statementId}`). This path-based ownership is the primary
+ * mechanism for securing the data.
+ *
+ * Key Security Decisions:
+ * - User Enumeration is Disabled: Listing the entire `/users` collection is explicitly forbidden
+ *   to protect user privacy and prevent data scraping.
+ * - Strict Ownership: A user can only read or write data within their own document tree
+ *   (i.e., where the `{userId}` in the path matches their authenticated UID).
+ * - Default Deny: Access is denied by default. All allowed operations are explicitly granted.
+ * - Relational Integrity: On creation, critical linking fields (e.g., a document's internal `userId`)
+ *   are validated to match the path, and these fields are made immutable on update. This prevents
+ *   data from being moved between users or becoming misaligned.
+ *
+ * Denormalization for Authorization: This ruleset relies on path-based security, which is
+ * a form of denormalization where the user's ID is part of the document path. For subcollections
+ * like `statements`, we also enforce that a `userId` field exists within the document data itself
+ * and matches the path, ensuring a robust and redundant ownership link that is simple and
+ * performant to check.
+ *
+ * Structural Segregation: The design uses dedicated subcollections for different types of
+ * user data (e.g., `statements`). This pattern ensures that a user can safely list their
+ * own statements without any risk of accessing another user's data, as the query is
+ * inherently scoped to their own private data path.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the authenticated user's UID matches the provided userId.
+     * This is the fundamental check for document ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * For state-changing operations (update, delete), this ensures the user is the
+     * owner AND the document already exists. This prevents writes to non-existent paths.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Validates required data integrity for a new User document on create.
+     * Ensures the internal `id` field matches the document's path {userId}.
+     */
+    function hasValidCreateData_User(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * Enforces immutability for critical relational fields on a User document update.
+     * The ownership link (`id`) cannot be changed after creation.
+     */
+    function isImmutable_User() {
+      return request.resource.data.id == resource.data.id;
+    }
+    
+    /**
+     * Validates required data integrity for a new Statement document on create.
+     * Ensures the internal `userId` field matches the document's path {userId}.
+     */
+    function hasValidCreateData_Statement(userId) {
+      return request.resource.data.userId == userId;
+    }
+
+    /**
+     * Enforces immutability for critical relational fields on a Statement document update.
+     * The ownership link (`userId`) cannot be changed after creation.
+     */
+    function isImmutable_Statement() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    // ------------------------------------------------------------------------
+    // Collection Rules
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Manages user profile documents. Only the owner can access or modify their own profile.
+     * @path /users/{userId}
+     * @allow (get) An authenticated user with UID 'user_abc' can read their own profile at `/users/user_abc`.
+     * @allow (create) An authenticated user with UID 'user_abc' can create their own profile document at `/users/user_abc`.
+     * @deny (list) No user, authenticated or not, can list all documents in the `/users` collection.
+     * @deny (get) A user with UID 'user_xyz' cannot read the profile at `/users/user_abc`.
+     * @principle Restricts access to a user's own data tree and prevents user enumeration.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && hasValidCreateData_User(userId);
+      allow update: if isExistingOwner(userId) && isImmutable_User();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages user-uploaded statement records. Access is strictly confined to the user who owns them.
+     * @path /users/{userId}/statements/{statementId}
+     * @allow (create) An authenticated user 'user_abc' can create a new statement at `/users/user_abc/statements/new_statement`.
+     * @allow (list) User 'user_abc' can list all statements within their own subcollection at `/users/user_abc/statements`.
+     * @deny (get) User 'user_xyz' cannot read a statement at `/users/user_abc/statements/some_statement`.
+     * @deny (update) User 'user_abc' cannot update a statement belonging to 'user_xyz'.
+     * @principle Enforces document ownership for all operations within a user's private subcollection.
+     */
+    match /users/{userId}/statements/{statementId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && hasValidCreateData_Statement(userId);
+      allow update: if isExistingOwner(userId) && isImmutable_Statement();
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

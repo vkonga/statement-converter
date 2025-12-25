@@ -1,0 +1,153 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the StatementXLS application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "User's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "User's last name."
+        },
+        "signUpDate": {
+          "type": "string",
+          "description": "Date and time the user signed up.",
+          "format": "date-time"
+        },
+        "lastLogin": {
+          "type": "string",
+          "description": "Date and time of the user's last login.",
+          "format": "date-time"
+        },
+        "isVerified": {
+          "type": "boolean",
+          "description": "Indicates whether the user's email is verified."
+        },
+        "verificationCode": {
+          "type": "string",
+          "description": "Verification code sent to the user's email for signup verification.",
+          "format": "string"
+        },
+        "signUpType": {
+          "type": "string",
+          "description": "The signup method ('email' or 'google')."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "firstName",
+        "lastName",
+        "signUpDate",
+        "isVerified",
+        "signUpType"
+      ]
+    },
+    "Statement": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Statement",
+      "type": "object",
+      "description": "Represents a bank statement uploaded by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the statement."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Statement)"
+        },
+        "uploadDate": {
+          "type": "string",
+          "description": "Date and time the statement was uploaded.",
+          "format": "date-time"
+        },
+        "fileName": {
+          "type": "string",
+          "description": "Original file name of the uploaded statement."
+        },
+        "storageLocation": {
+          "type": "string",
+          "description": "Location where the statement is stored (e.g., cloud storage URL)."
+        },
+        "conversionDate": {
+          "type": "string",
+          "description": "Date the statement was converted",
+          "format": "date-time"
+        },
+        "excelLocation": {
+          "type": "string",
+          "description": "Location where the excel is stored (e.g., cloud storage URL)."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "uploadDate",
+        "fileName",
+        "storageLocation"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Access is restricted to the user themselves. Uses path-based ownership for simple security rules.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/statements/{statementId}",
+        "definition": {
+          "entityName": "Statement",
+          "schema": {
+            "$ref": "#/backend/entities/Statement"
+          },
+          "description": "Stores statements uploaded by the user. Path-based ownership ensures only the user can access these statements.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "statementId",
+              "description": "The unique identifier of the statement."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to ensure secure access and data management for the StatementXLS application.  The primary principle guiding this design is Authorization Independence to avoid hierarchical authorization dependencies, enabling secure atomic operations and easier debugging.  We achieve this through path-based ownership and denormalization. Segregation of user data into private collections ensures that security rules are simplified and applied consistently. \n\nSpecifically:\n\n*   `/users/{userId}`:  Stores user profiles.  Access is restricted to the user themselves. The `userId` path parameter makes ownership explicit and easily enforceable in security rules.\n*   `/users/{userId}/statements/{statementId}`:  Stores the statements uploaded by the user. The path based ownership structure (`/users/{userId}`) ensures that the statements can only be accessed by the corresponding user.\n\nThis structure facilitates secure `list` operations because each top-level collection has a homogeneous security posture.  There's no need to filter based on document content; the path itself determines access.  The design avoids reliance on custom claims (DBAC) and focuses solely on `request.auth.uid` for authentication. Timestamps and the `userId` field ensure data integrity."
+  }
+}
