@@ -84,9 +84,8 @@ export default function DownloadPage() {
     let debits = 0;
 
     data.forEach(row => {
-      // Ensure we're parsing numbers correctly, even if they are strings.
-      const creditAmount = parseFloat(String(row.credit || '0').replace(/[^0-9.-]+/g, ""));
-      const debitAmount = parseFloat(String(row.debit || '0').replace(/[^0-9.-]+/g, ""));
+      const creditAmount = Number(row.credit) || 0;
+      const debitAmount = Number(row.debit) || 0;
 
       if (!isNaN(creditAmount)) {
         credits += creditAmount;
@@ -151,9 +150,6 @@ export default function DownloadPage() {
   };
 
   const formatCurrency = (value: number) => {
-    if (typeof value !== 'number' || isNaN(value)) {
-      return '';
-    }
      // Always show the formatted number, color/sign is handled by column context
     return value.toLocaleString('en-US', {
       style: 'currency',
@@ -320,5 +316,3 @@ export default function DownloadPage() {
     </div>
   );
 }
-
-    
