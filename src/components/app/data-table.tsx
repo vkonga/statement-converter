@@ -62,12 +62,14 @@ export function DataTable({
   }
 
   const formatCurrency = (value: string | number) => {
-    const num = Number(String(value).replace(/[^0-9.-]+/g,""));
+    const valueStr = String(value || '').trim();
+    if (!valueStr) return '';
+    const num = parseFloat(String(value).replace(/[^0-9.-]+/g,""));
     if (isNaN(num)) return value;
     
-    const isPositive = num >= 0;
-    const colorClass = isPositive ? "text-green-600" : "text-red-600";
-    const prefix = isPositive ? '+ ' : '- ';
+    const isNegative = valueStr.startsWith('-') || num < 0;
+    const colorClass = isNegative ? "text-red-600" : "text-green-600";
+    const prefix = isNegative ? '- ' : '+ ';
 
     return (
         <span className={colorClass}>

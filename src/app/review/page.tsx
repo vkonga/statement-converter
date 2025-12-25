@@ -106,16 +106,21 @@ export default function ReviewPage() {
         const newHeader = columnMappings[originalHeader];
         if (newHeader !== 'ignore' && row[originalHeader] !== undefined) {
           if (newHeader === 'amount_credit_debit') {
-            const amountStr = String(row[originalHeader] || '0').replace(/[^0-9.-]+/g, "");
+            const valueStr = String(row[originalHeader] || '').trim();
+            const amountStr = valueStr.replace(/[^0-9.-]+/g, "");
             const amount = parseFloat(amountStr);
+
             if (!isNaN(amount)) {
-              if (amount >= 0) {
-                newRow['credit'] = amount;
-                newRow['debit'] = 0;
-              } else {
+                if (valueStr.startsWith('-') || amount < 0) {
+                    newRow['credit'] = 0;
+                    newRow['debit'] = Math.abs(amount);
+                } else {
+                    newRow['credit'] = amount;
+                    newRow['debit'] = 0;
+                }
+            } else {
                 newRow['credit'] = 0;
-                newRow['debit'] = Math.abs(amount);
-              }
+                newRow['debit'] = 0;
             }
           } else {
             newRow[newHeader] = row[originalHeader];
