@@ -1,4 +1,3 @@
-
 'use server';
 
 import { extractDataFromStatement } from '@/ai/flows/extract-data-from-statement';
@@ -6,7 +5,8 @@ import { extractDataFromStatement } from '@/ai/flows/extract-data-from-statement
 export async function processPdf(
   pdfDataUri: string
 ): Promise<
-  { success: true; data: string } | { success: false; error: string }
+  | { success: true; data: string; currency: string }
+  | { success: false; error: string }
 > {
   if (!pdfDataUri || !pdfDataUri.startsWith('data:application/pdf;base64,')) {
     return { success: false, error: 'Invalid PDF data format.' };
@@ -15,7 +15,7 @@ export async function processPdf(
   try {
     const result = await extractDataFromStatement({ pdfDataUri });
     if (result.extractedData) {
-      return { success: true, data: result.extractedData };
+      return { success: true, data: result.extractedData, currency: result.currency || 'USD' };
     } else {
       return {
         success: false,

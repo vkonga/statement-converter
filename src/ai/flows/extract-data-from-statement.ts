@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview Extracts tabular data from a bank statement PDF using AI.
+ * @fileOverview Extracts tabular data and currency from a bank statement PDF using AI.
  *
  * - extractDataFromStatement - A function that handles the data extraction process.
  * - ExtractDataFromStatementInput - The input type for the extractDataFromStatement function.
@@ -24,6 +24,7 @@ const ExtractDataFromStatementOutputSchema = z.object({
   extractedData: z
     .string()
     .describe('The extracted tabular data from the bank statement in a JSON format.'),
+  currency: z.string().describe("The currency (e.g., USD, EUR, $, £) found in the bank statement."),
 });
 export type ExtractDataFromStatementOutput = z.infer<typeof ExtractDataFromStatementOutputSchema>;
 
@@ -40,6 +41,7 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert data extraction specialist.
 
 You will receive a bank statement PDF in data URI format. Your task is to extract all tabular data from the PDF and return it in JSON format.
+You must also identify the currency used in the statement (e.g., USD, EUR, $, £) and return it.
 
 Here is the bank statement PDF:
 

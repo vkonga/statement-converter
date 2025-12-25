@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -35,11 +34,13 @@ type RowData = { [key: string]: string | number };
 type TableData = RowData[];
 type FileFormat = 'xlsx' | 'csv';
 
-const jsonToXlsx = (data: TableData, totals: { credits: number, debits: number }, fileName: string) => {
+const jsonToXlsx = (data: TableData, totals: { credits: number, debits: number }, currency: string, fileName: string) => {
   if (typeof window === 'undefined') return;
 
   // Create a new workbook
   const wb = XLSX.utils.book_new();
+
+  const currencyFormat = `${currency}#,##0.00;[Red]-${currency}#,##0.00`;
 
   // Create the worksheet
   const ws_data = [
@@ -51,34 +52,49 @@ const jsonToXlsx = (data: TableData, totals: { credits: number, debits: number }
   ];
   const ws = XLSX.utils.aoa_to_sheet(ws_data);
 
-  // Apply currency formatting
-  const currencyFormat = '$#,##0.00;[Red]-$#,##0.00';
-  ws['B1'].z = currencyFormat;
-  ws['B2'].z = currencyFormat;
+  // Apply currency formatting to totals
+  const totalCreditsCell = XLSX.utils.encode_cell({c: 1, r: 0});
+  if (ws[totalCreditsCell]) ws[totalCreditsCell].z = currencyFormat;
+  
+  const totalDebitsCell = XLSX.utils.encode_cell({c: 1, r: 1});
+  if (ws[totalDebitsCell]) ws[totalDebitsCell].z = currencyFormat;
 
   if (data.length > 0) {
     const headers = Object.keys(data[0]);
     const creditIndex = headers.indexOf('credit');
     const debitIndex = headers.indexOf('debit');
     
+    // Apply currency formatting to transaction columns
     for (let i = 0; i < data.length; i++) {
-      const rowNum = i + 5; // 4 rows of headers/spacing + 1 for 1-based index
+      const rowNum = i + 4; // 3 rows of headers/spacing + 1 for 1-based index
       if (creditIndex !== -1) {
-        const cellRef = XLSX.utils.encode_cell({c: creditIndex, r: rowNum -1});
+        const cellRef = XLSX.utils.encode_cell({c: creditIndex, r: rowNum});
         if (ws[cellRef]) ws[cellRef].z = currencyFormat;
       }
       if (debitIndex !== -1) {
-        const cellRef = XLSX.utils.encode_cell({c: debitIndex, r: rowNum -1});
-        if (ws[cellRef]) ws[cellRef].z = currencyFormat;
+        const cellRef = XLSX.utils.encode_cell({c: debitIndex, r: rowNum});
+        if (ws[cellRef]) {
+            // For debits, we can use a format that shows them in red
+            ws[cellRef].z = `${currency}#,##0.00;[Red]${currency}#,##0.00`;
+        }
       }
     }
   }
 
   // Auto-fit columns
-  const cols = Object.keys(data[0] || {}).map((_, i) => ({
-    wch: data.reduce((w, r) => Math.max(w, String(Object.values(r)[i] || '').length), 10)
-  }));
-  ws['!cols'] = cols;
+  if (data.length > 0) {
+    const cols = Object.keys(data[0]).map((key, i) => {
+        let maxLength = key.length;
+        data.forEach(row => {
+            const cellValue = row[key];
+            if (cellValue != null) {
+                maxLength = Math.max(maxLength, String(cellValue).length);
+            }
+        });
+        return { wch: maxLength + 2 };
+    });
+    ws['!cols'] = cols;
+  }
 
 
   // Add the worksheet to the workbook
@@ -95,12 +111,18 @@ export default function DownloadPage() {
   const [fileName, setFileName] = useState('statement');
   const [fileSize, setFileSize] = useState(0);
   const [fileFormat, setFileFormat] = useState<FileFormat>('xlsx');
+  const [currency, setCurrency] = useState('USD');
 
   useEffect(() => {
     const storedData = sessionStorage.getItem('convertedData');
     const storedFileName = sessionStorage.getItem('fileName');
+    const storedCurrency = sessionStorage.getItem('currency');
+    
     if (storedFileName) {
       setFileName(storedFileName.replace(/\.pdf$/i, ''));
+    }
+     if (storedCurrency) {
+      setCurrency(storedCurrency);
     }
 
     if (storedData) {
@@ -157,7 +179,7 @@ export default function DownloadPage() {
     if (!data) return;
 
     if (fileFormat === 'xlsx') {
-      jsonToXlsx(data, { credits: totalCredits, debits: totalDebits }, fileName);
+      jsonToXlsx(data, { credits: totalCredits, debits: totalDebits }, currency, fileName);
        toast({
         title: 'Download Started',
         description: `Your file ${fileName}_converted.xlsx is downloading.`,
@@ -175,7 +197,7 @@ export default function DownloadPage() {
   const formatCurrency = (value: number) => {
     return value.toLocaleString('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: currency,
     });
   };
 
@@ -185,7 +207,7 @@ export default function DownloadPage() {
     }
     return value.toLocaleString('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: currency,
     });
   }
   

@@ -32,12 +32,18 @@ export default function ReviewPage() {
   const [headers, setHeaders] = useState<string[]>([]);
   const [columnMappings, setColumnMappings] = useState<{ [key: string]: string }>({});
   const [fileName, setFileName] = useState('statement');
+  const [currency, setCurrency] = useState('USD');
 
   useEffect(() => {
     const storedData = sessionStorage.getItem('extractedData');
     const storedFileName = sessionStorage.getItem('fileName');
+    const storedCurrency = sessionStorage.getItem('currency');
+    
     if (storedFileName) {
       setFileName(storedFileName.replace(/\.pdf$/i, ''));
+    }
+    if(storedCurrency) {
+      setCurrency(storedCurrency);
     }
 
     if (storedData) {
@@ -105,31 +111,24 @@ export default function ReviewPage() {
       for (const originalHeader in columnMappings) {
         const newHeader = columnMappings[originalHeader];
         if (newHeader !== 'ignore' && row[originalHeader] !== undefined) {
+          const originalValue = String(row[originalHeader] || '').trim();
           if (newHeader === 'amount_credit_debit') {
-            const valueStr = String(row[originalHeader] || '').trim();
-            // This regex is a bit more robust for various currency formats
-            const amountStr = valueStr.replace(/[^0-9.-]+/g, "");
+            const amountStr = originalValue.replace(/[^0-9.-]+/g, "");
             const amount = parseFloat(amountStr);
   
             if (!isNaN(amount)) {
-              // Check if it's a debit (negative value)
-              if (valueStr.startsWith('-') || amount < 0) {
+              if (originalValue.startsWith('-') || amount < 0) {
                 newRow['debit'] = Math.abs(amount);
-                if (!newRow['credit']) {
-                  newRow['credit'] = 0;
-                }
-              } else { // Otherwise it's a credit
+                if (!newRow['credit']) newRow['credit'] = 0;
+              } else {
                 newRow['credit'] = amount;
-                if (!newRow['debit']) {
-                  newRow['debit'] = 0;
-                }
+                if (!newRow['debit']) newRow['debit'] = 0;
               }
             } else {
               if (!newRow['credit']) newRow['credit'] = 0;
               if (!newRow['debit']) newRow['debit'] = 0;
             }
           } else {
-            // This handles cases where 'credit' or 'debit' are mapped directly
             const value = row[originalHeader];
             newRow[newHeader] = (typeof value === 'string' && (newHeader === 'credit' || newHeader === 'debit')) 
                 ? parseFloat(value.replace(/[^0-9.-]+/g, "")) || 0
@@ -137,7 +136,6 @@ export default function ReviewPage() {
           }
         }
       }
-      // Ensure credit/debit columns exist even if not in source
       if (newRow['credit'] === undefined) newRow['credit'] = 0;
       if (newRow['debit'] === undefined) newRow['debit'] = 0;
   
@@ -158,6 +156,7 @@ export default function ReviewPage() {
     
     // Store data for the download page
     sessionStorage.setItem('convertedData', JSON.stringify(mappedData));
+    sessionStorage.setItem('currency', currency);
     
     toast({
       title: "Ready for Download",

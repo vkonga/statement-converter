@@ -71,6 +71,7 @@ export function FileUploadArea() {
         // Store data and navigate to review page
         sessionStorage.setItem('extractedData', result.data);
         sessionStorage.setItem('fileName', selectedFile.name);
+        sessionStorage.setItem('currency', result.currency);
         router.push('/review');
       } else {
         setErrorMessage(result.error);
