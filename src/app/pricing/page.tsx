@@ -92,18 +92,18 @@ export default function PricingPage() {
             </Card>
             <Card className="h-full shadow-lg">
               <CardHeader className="pb-4">
-                <CardTitle className="text-3xl">Business</CardTitle>
+                <CardTitle className="text-3xl">Custom</CardTitle>
                 <CardDescription>
                   For large teams and enterprises.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="text-4xl font-bold">$50/mo</div>
-                <p className="text-muted-foreground">Up to 4000 pages/month</p>
+                <div className="text-4xl font-bold">Contact Us</div>
+                <p className="text-muted-foreground">For a custom quote and features.</p>
               </CardContent>
               <CardFooter>
                 <Button variant="secondary" className="w-full" asChild>
-                  <Link href="/signup">Contact Us</Link>
+                  <Link href="#">Contact Us</Link>
                 </Button>
               </CardFooter>
             </Card>
