@@ -37,12 +37,12 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
   }, [initialData]);
 
   const [columnMappings, setColumnMappings] = useState<
-    Record<string, keyof MappingOptions | 'unmapped'>
+    Record<string, keyof MappingOptions | ''>
   >(() => {
-    const initialMappings: Record<string, keyof MappingOptions | 'unmapped'> =
+    const initialMappings: Record<string, keyof MappingOptions | ''> =
       {};
     headers.forEach((header) => {
-      initialMappings[header] = 'unmapped';
+      initialMappings[header] = '';
     });
     return initialMappings;
   });
@@ -68,7 +68,7 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
 
   const getMappedData = () => {
     const mappedEntries = Object.entries(columnMappings).filter(
-      ([, v]) => v !== 'unmapped'
+      ([, v]) => v !== ''
     );
 
     const requiredMappings: (keyof MappingOptions)[] = [
@@ -95,7 +95,7 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
       const newRow: Record<string, string> = {};
       for (const [originalHeader, value] of Object.entries(row)) {
         const mapping = columnMappings[originalHeader];
-        if (mapping !== 'unmapped') {
+        if (mapping !== '') {
           if (mapping === 'amount_credit_debit') {
             const amount = parseFloat(
               value.replace(/[^0-9.-]+/g, '')
@@ -129,15 +129,15 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
 
   const handleMappingChange = (
     header: string,
-    value: keyof MappingOptions | 'unmapped'
+    value: keyof MappingOptions | ''
   ) => {
     setColumnMappings((prev) => {
       // Un-assign from other columns if this mapping is already used
       const newMappings = { ...prev };
-      if (value !== 'unmapped') {
+      if (value !== '') {
         for (const key in newMappings) {
           if (newMappings[key] === value) {
-            newMappings[key] = 'unmapped';
+            newMappings[key] = '';
           }
         }
       }
@@ -147,12 +147,12 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
   };
 
   const autoMapColumns = () => {
-    const newMappings: Record<string, keyof MappingOptions | 'unmapped'> = {};
+    const newMappings: Record<string, keyof MappingOptions | ''> = {};
     const usedMappings = new Set<keyof MappingOptions>();
 
     headers.forEach((header) => {
       const headerLower = header.toLowerCase().replace(/[^a-z0-9]/g, '');
-      let bestMatch: keyof MappingOptions | 'unmapped' = 'unmapped';
+      let bestMatch: keyof MappingOptions | '' = '';
 
       for (const [key, option] of Object.entries(MAPPING_OPTIONS)) {
         if (usedMappings.has(key as keyof MappingOptions)) continue;
@@ -165,7 +165,7 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
         }
       }
 
-      if (bestMatch !== 'unmapped') {
+      if (bestMatch !== '') {
         usedMappings.add(bestMatch);
       }
       newMappings[header] = bestMatch;
@@ -181,7 +181,7 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
     setColumnMappings((prev) => {
       const newMappings = { ...prev };
       for (const key in newMappings) {
-        newMappings[key] = 'unmapped';
+        newMappings[key] = '';
       }
       return newMappings;
     });
@@ -221,7 +221,7 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
                       </span>
                       <Select
                         value={columnMappings[header]}
-                        onValueChange={(value: keyof MappingOptions | 'unmapped') =>
+                        onValueChange={(value: keyof MappingOptions | '') =>
                           handleMappingChange(header, value)
                         }
                       >
@@ -229,7 +229,6 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
                           <SelectValue placeholder="Select mapping..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="unmapped">Unmapped</SelectItem>
                           {Object.entries(MAPPING_OPTIONS).map(
                             ([key, option]) => (
                               <SelectItem key={key} value={key}>
