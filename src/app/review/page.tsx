@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { DataTable } from '@/components/app/data-table';
 import { ArrowLeft, Cog, RotateCcw } from 'lucide-react';
-import { jsonToCsv, downloadFile } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 // This is a simplified representation of your data.
@@ -76,12 +75,17 @@ export default function ReviewPage() {
         }
       } catch (error) {
         console.error('Failed to parse stored data', error);
+        toast({
+          title: "Error loading data",
+          description: "Could not load the extracted data. Please try uploading again.",
+          variant: "destructive",
+        });
         router.push('/');
       }
     } else {
       router.push('/');
     }
-  }, [router]);
+  }, [router, toast]);
 
   const handleMappingChange = (column: string, value: string) => {
     setColumnMappings(prev => ({ ...prev, [column]: value }));
@@ -104,29 +108,34 @@ export default function ReviewPage() {
 
   const handleConfirmAndConvert = () => {
     const mappedData = getMappedData();
-    const csvData = jsonToCsv(JSON.stringify(mappedData));
-    if (csvData) {
-      downloadFile(csvData, `${fileName}_converted.csv`);
-      toast({
-        title: "Conversion Successful",
-        description: "Your file has been downloaded.",
-      });
-      router.push('/');
-    } else {
+    if (mappedData.length === 0) {
       toast({
         title: 'Conversion Failed',
-        description: 'Could not convert data to CSV. Please check your mappings.',
+        description: 'No data to convert. Please check your mappings.',
         variant: 'destructive',
       });
+      return;
     }
+    
+    // Store data for the download page
+    sessionStorage.setItem('convertedData', JSON.stringify(mappedData));
+    
+    toast({
+      title: "Ready for Download",
+      description: "Your data has been processed and is ready for the final step.",
+    });
+    router.push('/download');
   };
   
   const mappedColumnsCount = Object.values(columnMappings).filter(v => v !== 'ignore').length;
 
   if (!data) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        Loading...
+      <div className="flex min-h-screen items-center justify-center bg-muted/40">
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-lg font-medium">Loading review data...</p>
+          <Progress value={50} className="w-64 animate-pulse" />
+        </div>
       </div>
     );
   }
@@ -168,7 +177,7 @@ export default function ReviewPage() {
           </div>
         </div>
       </main>
-      <div className="sticky bottom-0 bg-background border-t">
+      <div className="sticky bottom-0 bg-background border-t z-10">
         <div className="container mx-auto flex items-center justify-between p-4">
             <Button variant="ghost" onClick={() => router.push('/')}>
                 <ArrowLeft className="mr-2 h-4 w-4"/>
@@ -180,7 +189,7 @@ export default function ReviewPage() {
                     <p className="text-muted-foreground">All required fields present</p>
                 </div>
                 <Button size="lg" onClick={handleConfirmAndConvert}>
-                Confirm & Convert
+                Confirm & Next
                 <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />
                 </Button>
             </div>
