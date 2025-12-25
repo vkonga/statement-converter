@@ -15,6 +15,7 @@ import {
   TableBody,
   TableCell,
 } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import {
   CheckCircle2,
   FileText,
