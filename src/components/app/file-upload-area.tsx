@@ -3,22 +3,21 @@
 import { useState, useRef, type DragEvent } from 'react';
 import {
   UploadCloud,
-  Loader2,
   Trash2,
   File as FileIcon,
-  FileCheck2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn, jsonToCsv, downloadFile } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { processPdf } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
+import { useRouter } from 'next/navigation';
 
-type Status = 'idle' | 'uploading' | 'processing' | 'success' | 'error';
+type Status = 'idle' | 'uploading' | 'processing' | 'error';
 
 export function FileUploadArea() {
+  const router = useRouter();
   const [status, setStatus] = useState<Status>('idle');
-  const [processedData, setProcessedData] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -51,6 +50,7 @@ export function FileUploadArea() {
     setFile(selectedFile);
     setStatus('uploading');
     setErrorMessage(null);
+    setProgress(0);
 
     const reader = new FileReader();
     reader.readAsDataURL(selectedFile);
@@ -68,8 +68,10 @@ export function FileUploadArea() {
       const result = await processPdf(base64Pdf);
 
       if (result.success) {
-        setProcessedData(result.data);
-        setStatus('success');
+        // Store data and navigate to review page
+        sessionStorage.setItem('extractedData', result.data);
+        sessionStorage.setItem('fileName', selectedFile.name);
+        router.push('/review');
       } else {
         setErrorMessage(result.error);
         setStatus('error');
@@ -106,24 +108,8 @@ export function FileUploadArea() {
     handleFileSelect(droppedFile);
   };
 
-  const handleDownload = () => {
-    if (!processedData) return;
-    const csvData = jsonToCsv(processedData);
-    if (csvData) {
-      const originalFileName = file?.name.replace(/\.pdf$/i, '') || 'statement';
-      downloadFile(csvData, `${originalFileName}.csv`);
-    } else {
-      toast({
-        title: 'Download Failed',
-        description: 'Could not convert data to CSV.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   const handleReset = () => {
     setStatus('idle');
-    setProcessedData(null);
     setErrorMessage(null);
     setFile(null);
     setProgress(0);
@@ -155,7 +141,7 @@ export function FileUploadArea() {
             Drop your bank statement here
           </p>
           <p className="text-sm text-muted-foreground">
-            Supports PDF, CSV, MT940 (Max 25MB)
+            Supports PDF (Max 25MB)
           </p>
         </div>
         <Button variant="default" size="lg" className='mt-2'>
@@ -193,7 +179,7 @@ export function FileUploadArea() {
     return (
       <div className="w-full">
         <div className="bg-muted/50 rounded-lg p-4 flex items-center gap-4">
-            <FileIcon className="h-8 w-8 text-red-500"/>
+            <FileIcon className="h-8 w-8 text-primary"/>
             <div className="flex-1">
                 <p className="font-medium text-sm truncate">{file.name}</p>
                 <div className="flex items-center gap-2">
@@ -202,7 +188,6 @@ export function FileUploadArea() {
                 </div>
                 {status === 'uploading' && <Progress value={progress} className="h-1 mt-1" />}
                 {status === 'processing' && <Progress value={100} className="h-1 mt-1 animate-pulse" />}
-                {status === 'success' && <Progress value={100} className="h-1 mt-1 bg-green-500" />}
             </div>
             {status !== 'processing' && status !== 'uploading' && (
               <Button variant="ghost" size="icon" onClick={handleReset} className="text-muted-foreground hover:text-destructive">
@@ -210,14 +195,8 @@ export function FileUploadArea() {
               </Button>
             )}
         </div>
-        {status === 'success' && (
-          <Button onClick={handleDownload} size="lg" className="w-full mt-4">
-            <FileCheck2 className="mr-2 h-5 w-5" />
-            Convert to Excel
-          </Button>
-        )}
         {status === 'error' && (
-          <div className="text-destructive text-sm mt-2 text-center">
+          <div className="text-destructive text-sm mt-2 p-2 bg-destructive/10 rounded-md text-center">
             {errorMessage}
           </div>
         )}

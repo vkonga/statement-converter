@@ -1,9 +1,14 @@
 import { FileUploadArea } from '@/components/app/file-upload-area';
 import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Lock, History, Ban, ShieldCheck } from 'lucide-react';
+import { Check, ShieldCheck, Zap } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -15,11 +20,12 @@ export default function Home() {
             <div className="flex flex-col items-center justify-center space-y-8 text-center">
               <div className="space-y-4">
                 <h1 className="text-4xl font-black tracking-tighter text-foreground sm:text-5xl md:text-6xl xl:text-7xl/none">
-                  Turn PDF Bank Statements into Excel
+                  Unlock Your Bank Statements
                 </h1>
                 <p className="mx-auto max-w-3xl text-lg text-muted-foreground md:text-xl">
-                  Fast, secure, and accurate conversion. Supports PDF, CSV, and
-                  MT940 formats. No sign-up required for your first file.
+                  Instantly convert your bank statement PDFs into analysis-ready
+                  Excel files. Save time, reduce errors, and gain insights
+                  faster than ever.
                 </p>
               </div>
               <div className="w-full max-w-2xl">
@@ -30,55 +36,46 @@ export default function Home() {
         </section>
         <section className="w-full bg-muted/40 py-16 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-              <Badge variant="outline" className="py-1 px-3 border-primary/50 text-primary bg-primary/10">
-                <ShieldCheck className="mr-2 h-4 w-4" />
-                SECURITY FIRST
-              </Badge>
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                Bank-level Security Protocols
-              </h2>
-            </div>
             <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:grid-cols-3">
               <Card className="h-full bg-card shadow-lg border-border/60">
                 <CardHeader className="items-center">
                   <div className="p-3 rounded-full bg-primary/10 border border-primary/20 mb-2">
-                    <Lock className="h-8 w-8 text-primary" />
+                    <Zap className="h-8 w-8 text-primary" />
                   </div>
-                  <CardTitle>End-to-End Encryption</CardTitle>
+                  <CardTitle>Fast, accurate data extraction.</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
                   <p className="text-muted-foreground">
-                    Your files are encrypted with 256-bit SSL during transfer
-                    and processing.
+                    Our AI-powered engine extracts data with high precision,
+                    saving you hours of manual work.
                   </p>
                 </CardContent>
               </Card>
               <Card className="h-full bg-card shadow-lg border-border/60">
                 <CardHeader className="items-center">
                   <div className="p-3 rounded-full bg-primary/10 border border-primary/20 mb-2">
-                    <History className="h-8 w-8 text-primary" />
+                    <ShieldCheck className="h-8 w-8 text-primary" />
                   </div>
-                  <CardTitle>Auto-Deletion</CardTitle>
+                  <CardTitle>Secure and private processing.</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
                   <p className="text-muted-foreground">
-                    Files are automatically permanently deleted from our
-                    servers after 1 hour.
+                    Your files are encrypted and automatically deleted after
+                    processing. We never store your data.
                   </p>
                 </CardContent>
               </Card>
               <Card className="h-full bg-card shadow-lg border-border/60">
                 <CardHeader className="items-center">
                   <div className="p-3 rounded-full bg-primary/10 border border-primary/20 mb-2">
-                    <Ban className="h-8 w-8 text-primary" />
+                    <Check className="h-8 w-8 text-primary" />
                   </div>
-                  <CardTitle>No Data Storage</CardTitle>
+                  <CardTitle>No more manual data entry.</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
                   <p className="text-muted-foreground">
-                    We process your data instantly. We do not store, view, or
-                    sell your financial data.
+                    Say goodbye to tedious copy-pasting. Get clean, structured
+                    data ready for analysis.
                   </p>
                 </CardContent>
               </Card>
