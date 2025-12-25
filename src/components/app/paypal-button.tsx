@@ -16,40 +16,49 @@ interface PayPalButtonProps {
 
 const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || 'test';
 
-export function PayPalButton({ planName, amount }: PayPalButtonProps) {
+export function PayPalButton({ planName, amount, billingCycle }: PayPalButtonProps) {
   const { toast } = useToast();
 
-  const createOrder = (data: CreateOrderData, actions: any) => {
-    console.log('Creating order for:', planName, 'Amount:', amount);
-    // Here you would typically make a call to your backend to create the order
-    // The backend would interact with PayPal's API to set up the transaction
-    // For this example, we'll create the order directly on the client.
-    return actions.order.create({
-      purchase_units: [
-        {
-          description: `Subscription to ${planName}`,
-          amount: {
-            // Currency and value should be passed from your backend
-            currency_code: 'USD',
-            value: amount,
-          },
-        },
-      ],
+  const createSubscription = (data: CreateOrderData, actions: any) => {
+    // This is where you would integrate with your backend to create a subscription plan ID.
+    // For this client-side example, we'll use a placeholder.
+    // In production, you would fetch a plan_id from your server.
+    // e.g., return fetch('/api/paypal/create-subscription', { method: 'POST', ... })
+    console.log(`Creating subscription for ${planName} (${billingCycle})`);
+    
+    // NOTE: This is a placeholder for a plan_id you would create in your PayPal Business account.
+    // You need to replace 'P-YOUR_PLAN_ID' with a real Plan ID from your PayPal dashboard.
+    const planId = 'P-YOUR_PLAN_ID'; 
+
+    if (planId === 'P-YOUR_PLAN_ID') {
+        console.error("PayPal Error: You must replace 'P-YOUR_PLAN_ID' with an actual Plan ID from your PayPal Business account.");
+        toast({
+            title: 'PayPal Configuration Error',
+            description: 'The PayPal plan is not configured correctly. Please contact support.',
+            variant: 'destructive',
+        });
+        // We prevent the subscription window from opening.
+        return new Promise((resolve, reject) => reject(new Error("PayPal Plan ID not configured.")));
+    }
+    
+    return actions.subscription.create({
+      plan_id: planId,
     });
   };
 
   const onApprove = (data: OnApproveData, actions: any) => {
-    console.log('Payment approved:', data);
-    // Here you would typically capture the order on your backend
-    // and then update the user's subscription status in your database.
-    return actions.order.capture().then((details: any) => {
-      toast({
-        title: 'Payment Successful!',
-        description: `Thank you for subscribing to the ${planName} plan.`,
-      });
-      console.log('Capture details:', details);
-      // Redirect or update UI to reflect subscription status
+    console.log('Subscription approved:', data);
+    // You would typically send the subscriptionID to your backend to verify
+    // and activate the user's subscription in your database.
+    // e.g., return fetch('/api/paypal/approve-subscription', { method: 'POST', body: JSON.stringify({ subscriptionID: data.subscriptionID })})
+    
+    toast({
+      title: 'Subscription Successful!',
+      description: `You are now subscribed to the ${planName} plan.`,
     });
+    
+    // The capture is not needed for subscriptions; the approval is the key step.
+    return Promise.resolve();
   };
 
   const onError = (err: any) => {
@@ -57,16 +66,16 @@ export function PayPalButton({ planName, amount }: PayPalButtonProps) {
     toast({
       title: 'Payment Error',
       description:
-        'An error occurred during the payment process. Please try again.',
+        'An error occurred during the payment process. Please try again or contact support.',
       variant: 'destructive',
     });
   };
-
-  if (!PAYPAL_CLIENT_ID || PAYPAL_CLIENT_ID === 'YOUR_CLIENT_ID_HERE') {
+  
+  if (PAYPAL_CLIENT_ID === 'test' || PAYPAL_CLIENT_ID === 'YOUR_CLIENT_ID_HERE') {
     return (
         <div className="w-full text-center p-4 bg-yellow-100 border border-yellow-300 rounded-md">
             <p className="text-sm text-yellow-800">
-                PayPal is not configured. Please set your Client ID in the environment variables.
+                PayPal is not configured. Please add your PayPal Client ID to your environment file to enable subscriptions.
             </p>
         </div>
     )
@@ -74,11 +83,11 @@ export function PayPalButton({ planName, amount }: PayPalButtonProps) {
 
 
   return (
-    <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID, currency: 'USD', intent: 'subscription' }}>
+    <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID, intent: 'subscription', vault: true }}>
       <div className="w-full">
         <PayPalButtons
           style={{ layout: 'vertical', label: 'subscribe' }}
-          createOrder={createOrder}
+          createSubscription={createSubscription}
           onApprove={onApprove}
           onError={onError}
         />
