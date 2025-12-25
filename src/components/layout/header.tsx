@@ -43,12 +43,6 @@ export function Header() {
           {user && (
             <>
               <Link
-                href="#"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Dashboard
-              </Link>
-              <Link
                 href="/"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
