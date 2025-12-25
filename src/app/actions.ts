@@ -1,11 +1,11 @@
 'use server';
 
-import { extractDataFromStatement } from '@/ai/flows/extract-data-from-statement';
+import { extractDataFromStatement, ExtractDataFromStatementOutput } from '@/ai/flows/extract-data-from-statement';
 
 export async function processPdf(
   pdfDataUri: string
 ): Promise<
-  | { success: true; data: string[] }
+  | { success: true; data: ExtractDataFromStatementOutput }
   | { success: false; error: string }
 > {
   if (!pdfDataUri || !pdfDataUri.startsWith('data:application/pdf;base64,')) {
@@ -14,13 +14,13 @@ export async function processPdf(
 
   try {
     const result = await extractDataFromStatement({ pdfDataUri });
-    if (result.columnNames) {
-      return { success: true, data: result.columnNames };
+    if (result && result.transactions && result.currency) {
+      return { success: true, data: result };
     } else {
       return {
         success: false,
         error:
-          'Failed to extract column names. The AI model did not return any data.',
+          'Failed to extract transaction data. The AI model did not return the expected structure.',
       };
     }
   } catch (e) {

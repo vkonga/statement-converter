@@ -22,7 +22,6 @@ export function FileUploadArea() {
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
-  const [columnNames, setColumnNames] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -52,7 +51,6 @@ export function FileUploadArea() {
     setStatus('uploading');
     setErrorMessage(null);
     setProgress(0);
-    setColumnNames([]);
 
     const reader = new FileReader();
     reader.readAsDataURL(selectedFile);
@@ -71,11 +69,15 @@ export function FileUploadArea() {
 
       if (result.success) {
         setStatus('success');
-        setColumnNames(result.data);
         toast({
             title: "Extraction Complete",
-            description: "Column names have been extracted successfully."
-        })
+            description: "We've successfully extracted the data from your statement."
+        });
+
+        // Store result in session storage and navigate
+        sessionStorage.setItem('statementData', JSON.stringify(result.data));
+        router.push('/review');
+
       } else {
         setErrorMessage(result.error);
         setStatus('error');
@@ -117,7 +119,6 @@ export function FileUploadArea() {
     setErrorMessage(null);
     setFile(null);
     setProgress(0);
-    setColumnNames([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -206,16 +207,6 @@ export function FileUploadArea() {
         {status === 'error' && (
           <div className="text-destructive text-sm mt-2 p-2 bg-destructive/10 rounded-md text-center">
             {errorMessage}
-          </div>
-        )}
-        {status === 'success' && columnNames.length > 0 && (
-          <div className="bg-background border rounded-lg p-4">
-            <h3 className="font-semibold mb-2">Extracted Column Names:</h3>
-            <ul className="list-disc list-inside bg-muted/50 p-3 rounded-md">
-                {columnNames.map((name, index) => (
-                    <li key={index} className="text-sm">{name}</li>
-                ))}
-            </ul>
           </div>
         )}
       </div>
