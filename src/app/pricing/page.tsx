@@ -35,7 +35,7 @@ export default function PricingPage() {
           </div>
         </section>
         <section className="w-full pb-12 md:pb-24 lg:pb-32">
-          <div className="container grid items-start justify-center gap-8 px-4 md:px-6 lg:grid-cols-3 lg:gap-12">
+          <div className="container grid items-start justify-center gap-8 px-4 md:grid-cols-2 md:px-6 lg:grid-cols-4 lg:gap-12">
             <Card className="h-full shadow-lg">
               <CardHeader className="pb-4">
                 <CardTitle className="text-3xl">Free</CardTitle>
@@ -87,6 +87,23 @@ export default function PricingPage() {
               <CardFooter>
                 <Button variant="secondary" className="w-full" asChild>
                   <Link href="/signup">Go Pro Max</Link>
+                </Button>
+              </CardFooter>
+            </Card>
+            <Card className="h-full shadow-lg">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-3xl">Business</CardTitle>
+                <CardDescription>
+                  For large teams and enterprises.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-4xl font-bold">$50/mo</div>
+                <p className="text-muted-foreground">Up to 4000 pages/month</p>
+              </CardContent>
+              <CardFooter>
+                <Button variant="secondary" className="w-full" asChild>
+                  <Link href="/signup">Contact Us</Link>
                 </Button>
               </CardFooter>
             </Card>
