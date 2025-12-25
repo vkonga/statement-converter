@@ -9,6 +9,7 @@ import {
 export type ProcessedStatementData = {
   transactions: Record<string, string>[];
   currency: string;
+  fileName: string;
 };
 
 export async function processPdf(
@@ -38,6 +39,7 @@ export async function processPdf(
       const processedData: ProcessedStatementData = {
         transactions: processedTransactions,
         currency: result.currency,
+        fileName: '', // This will be set on the client
       };
 
       return { success: true, data: processedData };

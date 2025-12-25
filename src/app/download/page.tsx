@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
@@ -16,13 +16,18 @@ import { Footer } from '@/components/layout/footer';
 import { CheckCircle, FileDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProcessedStatementData } from '@/app/actions';
+import { useUser, useFirestore } from '@/firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 export default function DownloadPage() {
   const router = useRouter();
+  const { user } = useUser();
+  const firestore = useFirestore();
   const [finalData, setFinalData] = useState<ProcessedStatementData | null>(
     null
   );
   const [isLoading, setIsLoading] = useState(true);
+  const hasSavedToHistory = useRef(false);
 
   useEffect(() => {
     try {
@@ -40,6 +45,25 @@ export default function DownloadPage() {
       setIsLoading(false);
     }
   }, [router]);
+
+  const saveToHistory = async () => {
+    if (!user || !firestore || !finalData || hasSavedToHistory.current) return;
+
+    try {
+      const statementsCol = collection(firestore, 'users', user.uid, 'statements');
+      await addDoc(statementsCol, {
+        fileName: finalData.fileName,
+        uploadDate: serverTimestamp(),
+        // In a real app, you would upload the file to Cloud Storage and save the URL here.
+        // For now, we'll leave it blank.
+        excelLocation: '',
+      });
+      hasSavedToHistory.current = true; // Mark as saved
+    } catch (error) {
+      console.error('Failed to save conversion to history:', error);
+      // Optional: Show a toast to the user
+    }
+  }
 
   const jsonToXlsx = (data: Record<string, string>[], fileName: string, currency: string) => {
     if (!data || data.length === 0) {
@@ -84,6 +108,8 @@ export default function DownloadPage() {
 
   const handleDownload = (format: 'xlsx' | 'csv') => {
     if (!finalData) return;
+    
+    saveToHistory();
 
     const fileName = `bank_statement_${new Date().toISOString().split('T')[0]}`;
     if (format === 'xlsx') {

@@ -40,9 +40,10 @@ export default function ReviewPage() {
   }, [router]);
 
   const handleConfirm = (mappedData: Record<string, string>[]) => {
-    const dataToStore = {
-      ...statementData,
+    const dataToStore: ProcessedStatementData = {
       transactions: mappedData,
+      currency: statementData!.currency,
+      fileName: statementData!.fileName,
     };
     sessionStorage.setItem('finalData', JSON.stringify(dataToStore));
     router.push('/download');

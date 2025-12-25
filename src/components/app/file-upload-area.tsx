@@ -103,7 +103,7 @@ export function FileUploadArea() {
         });
 
         // Store result in session storage and navigate
-        sessionStorage.setItem('statementData', JSON.stringify(result.data));
+        sessionStorage.setItem('statementData', JSON.stringify({ ...result.data, fileName: selectedFile.name }));
         router.push('/review');
       } else {
         setErrorMessage(result.error);
