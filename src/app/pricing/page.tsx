@@ -15,7 +15,7 @@ import Link from 'next/link';
 
 const features = {
   free: [
-    '5 free conversions',
+    '5 free conversions (lifetime)',
     'Single page PDF conversion',
     'Excel and CSV export',
     'Email support',
