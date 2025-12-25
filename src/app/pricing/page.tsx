@@ -32,7 +32,7 @@ export default function PricingPage() {
     },
     {
       name: 'Pro',
-      price: { monthly: 15, yearly: 11 },
+      price: { monthly: 15, yearly: 8 },
       description: 'For professionals and frequent users.',
       pages: 'Up to 400 pages/month',
       buttonText: 'Upgrade Now',
@@ -42,7 +42,7 @@ export default function PricingPage() {
     },
     {
       name: 'Pro Max',
-      price: { monthly: 30, yearly: 21 },
+      price: { monthly: 30, yearly: 15 },
       description: 'For power users and businesses.',
       pages: 'Up to 1000 pages/month',
       buttonText: 'Go Pro Max',
@@ -51,7 +51,7 @@ export default function PricingPage() {
     },
     {
       name: 'Business',
-      price: { monthly: 50, yearly: 35 },
+      price: { monthly: 50, yearly: 25 },
       description: 'For large teams and enterprises.',
       pages: 'Up to 4000 pages/month',
       buttonText: 'Go Business',
@@ -97,7 +97,7 @@ export default function PricingPage() {
                 <Label htmlFor="billing-cycle" className="font-medium">
                   Yearly
                 </Label>
-                <Badge variant="secondary" className='bg-green-100 text-green-700 border-green-200'>Save 30%</Badge>
+                <Badge variant="secondary" className='bg-green-100 text-green-700 border-green-200'>Save 50%</Badge>
               </div>
             </div>
           </div>
