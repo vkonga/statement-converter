@@ -21,8 +21,8 @@ const features = {
     'Email support',
   ],
   pro: [
-    'Unlimited conversions',
-    'Multi-page PDF conversion (up to 5 pages)',
+    'Up to 400 pages/month',
+    'Multi-page PDF conversion',
     'Excel and CSV export',
     'Priority email support',
     'Access to new features',
@@ -83,7 +83,7 @@ export default function PricingPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="text-4xl font-bold">$10/mo</div>
+                <div className="text-4xl font-bold">$15/mo</div>
                 <ul className="grid gap-2 text-muted-foreground">
                   {features.pro.map((feature, i) => (
                     <li key={i} className="flex items-center gap-2">
