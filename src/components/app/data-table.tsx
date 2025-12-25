@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Trash2, Wand2 } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { MAPPING_OPTIONS, type MappingOptions } from '@/lib/mappings';
 import { cn } from '@/lib/utils';
@@ -37,17 +36,17 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
   }, [initialData]);
 
   const [columnMappings, setColumnMappings] = useState<
-    Record<string, keyof MappingOptions | ''>
+    Record<string, keyof MappingOptions | 'unmapped'>
   >(() => {
-    const initialMappings: Record<string, keyof MappingOptions | ''> =
+    const initialMappings: Record<string, keyof MappingOptions | 'unmapped'> =
       {};
     headers.forEach((header) => {
-      initialMappings[header] = '';
+      initialMappings[header] = 'unmapped';
     });
     return initialMappings;
   });
 
-  const [previewData, setPreviewData] = useState(initialData.slice(0, 5));
+  const previewData = useMemo(() => initialData.slice(0, 5), [initialData]);
 
   const formatCurrency = (value: string | number | undefined) => {
     if (value === undefined || value === null) return '';
@@ -68,7 +67,7 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
 
   const getMappedData = () => {
     const mappedEntries = Object.entries(columnMappings).filter(
-      ([, v]) => v !== ''
+      ([, v]) => v !== 'unmapped'
     );
 
     const requiredMappings: (keyof MappingOptions)[] = [
@@ -116,7 +115,7 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
 
       for (const [originalHeader, value] of Object.entries(row)) {
         const mapping = columnMappings[originalHeader];
-        if (mapping && mapping !== '') {
+        if (mapping && mapping !== 'unmapped') {
           if (mapping !== 'amount_credit_debit') {
              newRow[mapping] = value;
           }
@@ -142,15 +141,15 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
 
   const handleMappingChange = (
     header: string,
-    value: keyof MappingOptions | ''
+    value: keyof MappingOptions | 'unmapped'
   ) => {
     setColumnMappings((prev) => {
       // Un-assign from other columns if this mapping is already used
       const newMappings = { ...prev };
-      if (value !== '') {
+      if (value !== 'unmapped') {
         for (const key in newMappings) {
           if (newMappings[key] === value) {
-            newMappings[key] = '';
+            newMappings[key] = 'unmapped';
           }
         }
       }
@@ -160,12 +159,12 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
   };
 
   const autoMapColumns = () => {
-    const newMappings: Record<string, keyof MappingOptions | ''> = {};
+    const newMappings: Record<string, keyof MappingOptions | 'unmapped'> = {};
     const usedMappings = new Set<keyof MappingOptions>();
 
     headers.forEach((header) => {
       const headerLower = header.toLowerCase().replace(/[^a-z0-9]/g, '');
-      let bestMatch: keyof MappingOptions | '' = '';
+      let bestMatch: keyof MappingOptions | 'unmapped' = 'unmapped';
 
       for (const [key, option] of Object.entries(MAPPING_OPTIONS)) {
         if (usedMappings.has(key as keyof MappingOptions)) continue;
@@ -178,7 +177,7 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
         }
       }
 
-      if (bestMatch !== '') {
+      if (bestMatch !== 'unmapped') {
         usedMappings.add(bestMatch);
       }
       newMappings[header] = bestMatch;
@@ -194,7 +193,7 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
     setColumnMappings((prev) => {
       const newMappings = { ...prev };
       for (const key in newMappings) {
-        newMappings[key] = '';
+        newMappings[key] = 'unmapped';
       }
       return newMappings;
     });
@@ -233,7 +232,7 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
                       </span>
                       <Select
                         value={columnMappings[header]}
-                        onValueChange={(value: keyof MappingOptions | '') =>
+                        onValueChange={(value: keyof MappingOptions | 'unmapped') =>
                           handleMappingChange(header, value)
                         }
                       >
@@ -241,7 +240,7 @@ export function DataTable({ initialData, currency, onConfirm }: DataTableProps) 
                           <SelectValue placeholder="Select mapping..." />
                         </SelectTrigger>
                         <SelectContent>
-                           <SelectItem value="">
+                           <SelectItem value="unmapped">
                             Don't map
                           </SelectItem>
                           {Object.entries(MAPPING_OPTIONS).map(
