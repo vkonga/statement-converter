@@ -84,14 +84,7 @@ export default function PricingPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-4xl font-bold">$15/mo</div>
-                <ul className="grid gap-2 text-muted-foreground">
-                  {features.pro.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2">
-                      <Check className="h-5 w-5 text-primary" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+                <p className="text-muted-foreground">Up to 400 pages/month</p>
               </CardContent>
               <CardFooter>
                 <Button className="w-full" asChild>
