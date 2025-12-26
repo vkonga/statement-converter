@@ -18,7 +18,7 @@ export function Footer() {
             Terms of Service
           </Link>
           <Link
-            href="#"
+            href="/contact-support"
             className="text-sm text-muted-foreground hover:text-foreground"
           >
             Contact Support

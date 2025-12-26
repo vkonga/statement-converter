@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import * as XLSX from 'xlsx';
+// import * as XLSX from 'xlsx'; // Removed for dynamic import optimization
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -66,7 +66,7 @@ export default function DownloadPage() {
     }
   }
 
-  const jsonToXlsxBlob = (data: Record<string, string>[]) => {
+  const jsonToXlsxBlob = (XLSX: any, data: Record<string, string>[]) => {
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
@@ -107,10 +107,12 @@ export default function DownloadPage() {
       }
     }
 
+    // Dynamic import for optimization
+    const XLSX = await import('xlsx');
     const baseFileName = `bank_statement_${new Date().toISOString().split('T')[0]}`;
 
     if (format === 'xlsx') {
-      const xlsxBlob = jsonToXlsxBlob(finalData.transactions);
+      const xlsxBlob = jsonToXlsxBlob(XLSX, finalData.transactions);
 
       // Trigger local download immediately for the user
       triggerLocalDownload(xlsxBlob, baseFileName);

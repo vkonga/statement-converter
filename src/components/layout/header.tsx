@@ -63,7 +63,7 @@ export function Header() {
           </Link>
 
           <Link
-            href="#"
+            href="/settings"
             className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Settings
@@ -79,7 +79,7 @@ export function Header() {
         <Link href="/" className="flex items-center gap-2">
           <Logo />
           <h1 className="text-xl font-bold text-foreground">
-            StatementConverter
+            Econverter
           </h1>
         </Link>
 
@@ -169,7 +169,7 @@ export function Header() {
                   <div className="flex flex-col gap-6 mt-6">
                     <Link href="/" className="flex items-center gap-2">
                       <Logo />
-                      <span className="font-bold">StatementConverter</span>
+                      <span className="font-bold">Econverter</span>
                     </Link>
                     <nav className="flex flex-col gap-4">
                       <NavItems />

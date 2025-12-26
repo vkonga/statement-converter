@@ -16,6 +16,37 @@ export type ProcessedStatementData = {
   pageCount: number;
 };
 
+const RATE_LIMIT_WINDOW_MS = 3600 * 1000; // 1 hour
+const ANON_LIMIT = 5;
+const AUTH_LIMIT = 50;
+
+async function checkRateLimit(identifier: string, isAuth: boolean) {
+  const now = Date.now();
+  const limit = isAuth ? AUTH_LIMIT : ANON_LIMIT;
+  const rateLimitRef = firestore.collection('rate_limits').doc(identifier);
+
+  await firestore.runTransaction(async (transaction) => {
+    const doc = await transaction.get(rateLimitRef);
+    const data = doc.data();
+
+    if (!doc.exists || (data && now - data.startTime > RATE_LIMIT_WINDOW_MS)) {
+      // First request or window expired
+      transaction.set(rateLimitRef, {
+        count: 1,
+        startTime: now,
+      });
+    } else {
+      // Increment count
+      if (data && data.count >= limit) {
+        throw new Error(`Rate limit exceeded. Please try again later.`);
+      }
+      transaction.update(rateLimitRef, {
+        count: FieldValue.increment(1),
+      });
+    }
+  });
+}
+
 export async function deductUserCredits(idToken: string, pageCount: number): Promise<{ success: boolean; error?: string }> {
   try {
     const decodedToken = await auth.verifyIdToken(idToken);
@@ -52,6 +83,26 @@ export async function processPdf(
   | { success: true; data: ProcessedStatementData }
   | { success: false; error: string }
 > {
+  // Rate Limiting Logic
+  let userIdentifier = 'anonymous_global';
+  let isAuth = false;
+
+  if (idToken) {
+    try {
+      const decodedToken = await auth.verifyIdToken(idToken);
+      userIdentifier = decodedToken.uid;
+      isAuth = true;
+    } catch (e) {
+      console.warn("Invalid token for rate limiting, treating as anonymous for limit check");
+    }
+  }
+
+  try {
+    await checkRateLimit(userIdentifier, isAuth);
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+
   if (!pdfDataUri || !pdfDataUri.startsWith('data:application/pdf;base64,')) {
     return { success: false, error: 'Invalid PDF data format.' };
   }

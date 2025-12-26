@@ -75,12 +75,7 @@ export default function TermsOfServicePage() {
                             </p>
                         </section>
 
-                        <section>
-                            <h2 className="text-2xl font-bold">Contact</h2>
-                            <p className="text-muted-foreground">
-                                For legal inquiries: legal@statementconverter.com
-                            </p>
-                        </section>
+
                     </div>
                 </div>
             </main>
