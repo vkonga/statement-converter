@@ -1,6 +1,17 @@
+import { Metadata } from 'next';
 import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
+
+export const metadata: Metadata = {
+    title: 'Contact Support | Statement Converter',
+    description: 'Need help converting PDFs to Excel? Contact our support team for assistance with bank statement conversions, billing questions, or technical issues.',
+    keywords: ['contact', 'support', 'help', 'statement converter', 'pdf to excel', 'customer service'],
+    robots: {
+        index: true,
+        follow: true,
+    }
+};
 
 export default function ContactSupportPage() {
     return (
