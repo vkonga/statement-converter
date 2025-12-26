@@ -6,13 +6,13 @@ export function Footer() {
       <div className="container mx-auto flex flex-col sm:flex-row h-auto sm:h-20 items-center justify-between p-4 sm:p-0">
         <div className="flex items-center gap-4 mb-4 sm:mb-0">
           <Link
-            href="#"
+            href="/privacy-policy"
             className="text-sm text-muted-foreground hover:text-foreground"
           >
             Privacy Policy
           </Link>
           <Link
-            href="#"
+            href="/terms-of-service"
             className="text-sm text-muted-foreground hover:text-foreground"
           >
             Terms of Service

@@ -54,6 +54,7 @@ export default function DownloadPage() {
     try {
       const statementsCol = collection(firestore, 'users', user.uid, 'statements');
       await addDoc(statementsCol, {
+        userId: user.uid,
         fileName: finalData.fileName,
         uploadDate: serverTimestamp(),
         excelLocation: downloadUrl,
@@ -72,7 +73,7 @@ export default function DownloadPage() {
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     return new Blob([wbout], { type: 'application/octet-stream' });
   };
-  
+
   const triggerLocalDownload = (blob: Blob, fileName: string) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -89,42 +90,35 @@ export default function DownloadPage() {
     if (!finalData) return;
 
     const baseFileName = `bank_statement_${new Date().toISOString().split('T')[0]}`;
-    
-    if (format === 'xlsx') {
-        const xlsxBlob = jsonToXlsxBlob(finalData.transactions);
-        
-        // Trigger local download immediately for the user
-        triggerLocalDownload(xlsxBlob, baseFileName);
 
-        // Upload to Firebase Storage and save to history if user is logged in
-        if (user && storage && !hasSavedToHistory.current) {
-            const storageRef = ref(storage, `users/${user.uid}/statements/${baseFileName}_${Date.now()}.xlsx`);
-            try {
-                const snapshot = await uploadBytes(storageRef, xlsxBlob);
-                const downloadURL = await getDownloadURL(snapshot.ref);
-                await saveToHistory(downloadURL);
-            } catch (error) {
-                console.error("Failed to upload to Firebase Storage:", error);
-            }
-        }
+    if (format === 'xlsx') {
+      const xlsxBlob = jsonToXlsxBlob(finalData.transactions);
+
+      // Trigger local download immediately for the user
+      triggerLocalDownload(xlsxBlob, baseFileName);
+
+      // Save to history (Metadata only, no file storage)
+      if (user && !hasSavedToHistory.current) {
+        await saveToHistory('');
+      }
 
     } else { // CSV
-        const ws = XLSX.utils.json_to_sheet(finalData.transactions);
-        const csv = XLSX.utils.sheet_to_csv(ws);
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `${baseFileName}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Note: CSV uploads are not currently saved to history.
-        if (user && !hasSavedToHistory.current) {
-          await saveToHistory(''); // Save record even without upload URL for CSV
-        }
+      const ws = XLSX.utils.json_to_sheet(finalData.transactions);
+      const csv = XLSX.utils.sheet_to_csv(ws);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${baseFileName}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Note: CSV uploads are not currently saved to history.
+      if (user && !hasSavedToHistory.current) {
+        await saveToHistory(''); // Save record even without upload URL for CSV
+      }
     }
   };
 

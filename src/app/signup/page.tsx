@@ -84,6 +84,7 @@ export default function SignupPage() {
         isVerified: false,
         signUpType: 'email',
         authProvider: 'password',
+        credits: 5,
       });
 
       // Send verification email
@@ -131,6 +132,7 @@ export default function SignupPage() {
           isVerified: true, // Google users are considered verified
           signUpType: 'google',
           authProvider: 'google.com',
+          credits: 5,
         });
       }
     } catch (err: any) {

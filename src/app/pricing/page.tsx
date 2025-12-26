@@ -17,9 +17,11 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { PayPalButton } from '@/components/app/paypal-button';
+import { useUser } from '@/firebase';
 
 export default function PricingPage() {
   const [isYearly, setIsYearly] = useState(false);
+  const { user } = useUser();
 
   const plans = [
     {
@@ -36,6 +38,7 @@ export default function PricingPage() {
       price: { monthly: 15, yearly: 8 },
       description: 'For professionals and frequent users.',
       pages: 'Up to 400 pages/month',
+      monthlyCredit: 400,
       buttonText: 'Upgrade Now',
       buttonVariant: 'default',
       popular: true,
@@ -46,6 +49,7 @@ export default function PricingPage() {
       price: { monthly: 30, yearly: 15 },
       description: 'For power users and businesses.',
       pages: 'Up to 1000 pages/month',
+      monthlyCredit: 1000,
       buttonText: 'Go Pro Max',
       buttonVariant: 'secondary',
       href: '/signup',
@@ -55,6 +59,7 @@ export default function PricingPage() {
       price: { monthly: 50, yearly: 25 },
       description: 'For large teams and enterprises.',
       pages: 'Up to 4000 pages/month',
+      monthlyCredit: 4000,
       buttonText: 'Go Business',
       buttonVariant: 'secondary',
       href: '/signup',
@@ -108,9 +113,8 @@ export default function PricingPage() {
             {plans.map((plan) => (
               <Card
                 key={plan.name}
-                className={`flex flex-col h-full shadow-lg ${
-                  plan.popular ? 'border-2 border-primary' : ''
-                } relative`}
+                className={`flex flex-col h-full shadow-lg ${plan.popular ? 'border-2 border-primary' : ''
+                  } relative`}
               >
                 {plan.popular && (
                   <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -134,20 +138,36 @@ export default function PricingPage() {
                     )}
                     {typeof plan.price === 'object' && plan.price.monthly > 0 && <span className="text-xl font-normal text-muted-foreground">/mo</span>}
                   </div>
-                   {typeof plan.price === 'object' && isYearly && plan.price.yearly > 0 && (
+                  {typeof plan.price === 'object' && isYearly && plan.price.yearly > 0 && (
                     <p className="text-sm text-muted-foreground -mt-2">
                       Billed as ${plan.price.yearly * 12} per year
                     </p>
                   )}
-                  <p className="text-muted-foreground">{plan.pages}</p>
+                  <p className="text-muted-foreground">
+                    {plan.monthlyCredit
+                      ? isYearly
+                        ? `Up to ${(plan.monthlyCredit * 12).toLocaleString()} pages/year`
+                        : `Up to ${plan.monthlyCredit.toLocaleString()} pages/month`
+                      : plan.pages}
+                  </p>
                 </CardContent>
                 <CardFooter>
                   {plan.href && typeof plan.price === 'object' && plan.price.monthly > 0 ? (
-                     <PayPalButton 
-                        planName={plan.name} 
-                        amount={isYearly ? plan.price.yearly.toString() : plan.price.monthly.toString()} 
+                    user ? (
+                      <PayPalButton
+                        planName={plan.name}
+                        amount={isYearly ? (plan.price.yearly * 12).toString() : plan.price.monthly.toString()}
                         billingCycle={isYearly ? 'yearly' : 'monthly'}
                       />
+                    ) : (
+                      <Button
+                        variant={plan.buttonVariant as any}
+                        className="w-full"
+                        asChild
+                      >
+                        <Link href="/signup">Sign up to Subscribe</Link>
+                      </Button>
+                    )
                   ) : plan.href ? (
                     <Button
                       variant={plan.buttonVariant as any}
@@ -156,7 +176,7 @@ export default function PricingPage() {
                     >
                       <Link href={plan.href}>{plan.buttonText}</Link>
                     </Button>
-                  ) : null }
+                  ) : null}
                 </CardFooter>
               </Card>
             ))}

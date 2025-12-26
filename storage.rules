@@ -1,0 +1,26 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is the owner of the path
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Explicitly deny access to everything by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Allow user to access their own folder
+    // e.g., /users/USER_ID/statements/file.xlsx
+    match /users/{userId}/{allPaths=**} {
+      allow read, write: if isOwner(userId);
+    }
+  }
+}

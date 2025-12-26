@@ -53,8 +53,8 @@ export function FileUploadArea() {
       try {
         const fileBuffer = await selectedFile.arrayBuffer();
         const pdfDoc = await PDFDocument.load(fileBuffer, {
-            // Skips parsing objects that are not required for getting the page count
-            updateMetadata: false 
+          // Skips parsing objects that are not required for getting the page count
+          updateMetadata: false
         });
         const pageCount = pdfDoc.getPageCount();
 
@@ -92,7 +92,13 @@ export function FileUploadArea() {
     reader.onload = async () => {
       setStatus('processing');
       const base64Pdf = reader.result as string;
-      const result = await processPdf(base64Pdf);
+
+      let idToken: string | undefined;
+      if (user) {
+        idToken = await user.getIdToken();
+      }
+
+      const result = await processPdf(base64Pdf, idToken);
 
       if (result.success) {
         setStatus('success');
@@ -156,7 +162,7 @@ export function FileUploadArea() {
       <AuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
       <div
         className={cn(
-          'border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors duration-200',
+          'border-2 border-dashed rounded-lg p-8 md:p-12 text-center cursor-pointer transition-colors duration-200',
           isDragging
             ? 'border-primary bg-primary/10'
             : 'border-border hover:border-primary/50'
