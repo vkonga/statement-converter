@@ -13,7 +13,37 @@ export type ProcessedStatementData = {
   transactions: Record<string, string>[];
   currency: string;
   fileName: string;
+  pageCount: number;
 };
+
+export async function deductUserCredits(idToken: string, pageCount: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    const decodedToken = await auth.verifyIdToken(idToken);
+    const userId = decodedToken.uid;
+    const userRef = firestore.collection('users').doc(userId);
+
+    await firestore.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists) {
+        throw new Error('User account not found.');
+      }
+
+      const userData = userDoc.data();
+      const credits = userData?.credits || 0;
+
+      if (credits < pageCount) {
+        throw new Error(`Insufficient credits. You need ${pageCount} credits to download this file.`);
+      }
+
+      transaction.update(userRef, { credits: credits - pageCount });
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Credit deduction failed:", error);
+    return { success: false, error: error.message || 'Failed to deduct credits.' };
+  }
+}
 
 export async function processPdf(
   pdfDataUri: string,
@@ -26,44 +56,34 @@ export async function processPdf(
     return { success: false, error: 'Invalid PDF data format.' };
   }
 
-  // Verify User and Deduct Credits
+  let pageCount = 0;
+
+  // Verify User (Just check existence, don't deduct yet)
   if (idToken) {
     try {
       const decodedToken = await auth.verifyIdToken(idToken);
       const userId = decodedToken.uid;
       const userRef = firestore.collection('users').doc(userId);
+      const userDoc = await userRef.get(); // fast read
 
-      // Calculate pages *before* transaction to minimize transaction time
+      if (!userDoc.exists) {
+        // handle implicit user?
+      }
+
       const pdfBuffer = Buffer.from(pdfDataUri.split(',')[1], 'base64');
       const pdfDoc = await PDFDocument.load(pdfBuffer, { updateMetadata: false });
-      const pageCount = pdfDoc.getPageCount();
+      pageCount = pdfDoc.getPageCount();
 
-      await firestore.runTransaction(async (transaction) => {
-        const userDoc = await transaction.get(userRef);
-        if (!userDoc.exists) {
-          throw new Error('User account not found.');
-        }
+      // Optional: Check if they *have* credits to warn them early?
+      // The user wants to review first, so maybe we let them proceed even if 0 credits, 
+      // but they won't be able to download.
+      // However, to save server costs, we might want to block if 0 credits.
+      // But let's follow the user's "Review first" flow.
 
-        const userData = userDoc.data();
-        const credits = userData?.credits || 0;
-
-        if (credits < pageCount) {
-          throw new Error(`Insufficient credits. You need ${pageCount} credits for this ${pageCount}-page document.`);
-        }
-
-        transaction.update(userRef, { credits: credits - pageCount });
-      });
     } catch (error: any) {
-      console.error("Credit deduction failed:", error);
-      return { success: false, error: error.message || 'Authentication failed or insufficient credits.' };
+      console.error("Auth check failed:", error);
+      return { success: false, error: 'Authentication failed.' };
     }
-  } else {
-    // If no ID token is provided, checking if we should allow anonymous usage? 
-    // For now, based on the request, we assume credit deduction is key. 
-    // If the client logic passes a token, we deduct. 
-    // If not, we proceed (maybe specific logic for strictly free/guest access exists elsewhere or is intended).
-    // However, to enforce "credits based on uploaded file", we probably should require it or just proceed if the frontend handles the gatekeeping.
-    // I'll proceed if no token, assuming frontend blocked unauthorized access if needed (like the page count check).
   }
 
   try {
@@ -84,6 +104,7 @@ export async function processPdf(
         transactions: processedTransactions,
         currency: result.currency,
         fileName: '', // This will be set on the client
+        pageCount: pageCount,
       };
 
       return { success: true, data: processedData };

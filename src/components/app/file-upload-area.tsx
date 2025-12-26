@@ -12,7 +12,7 @@ import { useUser } from '@/firebase';
 import { PDFDocument } from 'pdf-lib';
 import { AuthDialog } from '@/components/app/auth-dialog';
 
-type Status = 'idle' | 'uploading' | 'processing' | 'success' | 'error';
+type Status = 'idle' | 'uploading' | 'processing' | 'success' | 'error' | 'ready';
 
 export function FileUploadArea() {
   const router = useRouter();
@@ -75,51 +75,22 @@ export function FileUploadArea() {
     }
 
     setFile(selectedFile);
+    // Simulate upload
     setStatus('uploading');
     setErrorMessage(null);
     setProgress(0);
 
-    const reader = new FileReader();
-    reader.readAsDataURL(selectedFile);
-
-    reader.onprogress = event => {
-      if (event.lengthComputable) {
-        const percentage = Math.round((event.loaded * 100) / event.total);
-        setProgress(percentage);
-      }
-    };
-
-    reader.onload = async () => {
-      setStatus('processing');
-      const base64Pdf = reader.result as string;
-
-      let idToken: string | undefined;
-      if (user) {
-        idToken = await user.getIdToken();
-      }
-
-      const result = await processPdf(base64Pdf, idToken);
-
-      if (result.success) {
-        setStatus('success');
-        toast({
-          title: 'Extraction Complete',
-          description:
-            "We've successfully extracted the data from your statement.",
-        });
-
-        // Store result in session storage and navigate
-        sessionStorage.setItem('statementData', JSON.stringify({ ...result.data, fileName: selectedFile.name }));
-        router.push('/review');
-      } else {
-        setErrorMessage(result.error);
-        setStatus('error');
-      }
-    };
-    reader.onerror = () => {
-      setErrorMessage('Failed to read the file.');
-      setStatus('error');
-    };
+    // Simulate a brief upload progress
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setStatus('ready'); // Ready for manual convert
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 100);
   };
 
   const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
@@ -201,6 +172,49 @@ export function FileUploadArea() {
     </>
   );
 
+  const handleConvert = async () => {
+    if (!file) return;
+
+    setStatus('processing');
+    setErrorMessage(null);
+    setProgress(0); // Reset progress if needed, though upload is done
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+
+    reader.onload = async () => {
+      const base64Pdf = reader.result as string;
+
+      let idToken: string | undefined;
+      if (user) {
+        idToken = await user.getIdToken();
+      }
+
+      const result = await processPdf(base64Pdf, idToken);
+
+      if (result.success) {
+        setStatus('success');
+        toast({
+          title: 'Extraction Complete',
+          description:
+            "We've successfully extracted the data from your statement.",
+        });
+
+        // Store result in session storage and navigate
+        sessionStorage.setItem('statementData', JSON.stringify({ ...result.data, fileName: file.name }));
+        router.push('/review');
+      } else {
+        setErrorMessage(result.error);
+        setStatus('error');
+      }
+    };
+
+    reader.onerror = () => {
+      setErrorMessage('Failed to read the file.');
+      setStatus('error');
+    };
+  };
+
   const renderFileStatus = () => {
     if (!file) return null;
 
@@ -253,6 +267,13 @@ export function FileUploadArea() {
             </Button>
           )}
         </div>
+
+        {status === 'ready' && (
+          <Button className="w-full" onClick={handleConvert} size="lg">
+            Convert to Excel
+          </Button>
+        )}
+
         {status === 'error' && (
           <div className="text-destructive text-sm mt-2 p-2 bg-destructive/10 rounded-md text-center">
             {errorMessage}

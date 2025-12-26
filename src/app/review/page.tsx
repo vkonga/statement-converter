@@ -44,6 +44,7 @@ export default function ReviewPage() {
       transactions: mappedData,
       currency: statementData!.currency,
       fileName: statementData!.fileName,
+      pageCount: statementData!.pageCount,
     };
     sessionStorage.setItem('finalData', JSON.stringify(dataToStore));
     router.push('/download');
@@ -55,7 +56,7 @@ export default function ReviewPage() {
         <Header />
         <main className="flex-1 container mx-auto py-8 px-4">
           <div className="w-full space-y-6">
-             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <Skeleton className="h-8 w-64" />
               <div className='flex items-center gap-2'>
                 <Skeleton className="h-9 w-24" />

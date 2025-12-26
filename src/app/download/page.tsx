@@ -15,7 +15,7 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { CheckCircle, FileDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ProcessedStatementData } from '@/app/actions';
+import { ProcessedStatementData, deductUserCredits } from '@/app/actions';
 import { useUser, useFirestore, useStorage } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -88,6 +88,24 @@ export default function DownloadPage() {
 
   const handleDownload = async (format: 'xlsx' | 'csv') => {
     if (!finalData) return;
+
+    // Deduct credits if authenticated and not already deducted for this session
+    if (user && !hasSavedToHistory.current) {
+      try {
+        const idToken = await user.getIdToken();
+        const deductionResult = await deductUserCredits(idToken, finalData.pageCount);
+
+        if (!deductionResult.success) {
+          // Show error using a toast or alert
+          alert(`Failed to download: ${deductionResult.error}`);
+          return;
+        }
+      } catch (err) {
+        console.error("Error deducting credits:", err);
+        alert("An error occurred while processing your credits.");
+        return;
+      }
+    }
 
     const baseFileName = `bank_statement_${new Date().toISOString().split('T')[0]}`;
 
