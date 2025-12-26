@@ -4,8 +4,15 @@ import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'StatementConverter',
-  description: 'Convert bank statement PDFs into editable Excel files.',
+  title: {
+    default: 'Econvert | Bank Statement to Excel Converter',
+    template: '%s | Econvert'
+  },
+  description: 'Econvert: The fastest way to convert bank statement PDFs into editable Excel files. Secure, accurate, and easy to use.',
+  keywords: ['Econvert', 'bank statement converter', 'pdf to excel', 'financial data extraction'],
+  verification: {
+    google: 'x4hKZ7rEg44nVNzqldhpi9a4iOBckL_BPsKx0qdsuIo',
+  }
 };
 
 export default function RootLayout({
